@@ -9,13 +9,20 @@
 3. Options->Menu Assignments 打开Menu Assignments窗口, 在Command中输入Macro, 
 选中要使用的宏, 添加到合适的菜单中.
 
-附上宏定义文件*/
+*/
 
 /* Franco.em - a small collection of useful editing macros */
 
 macro getMyName()
 {
-return "chenguodong"
+    // 从环境变量中获取用户姓名
+    szMyName = GetEnv(SI_USER)
+    if (szMyName == "")
+    {
+        szMyName = Ask("第一次使用请输入您的姓名, 它将出现在自动生成的注释中.")
+        PutEnv(SI_USER, szMyName)
+    }
+    return szMyName
 }
 
 macro MyInsFileHeader()
@@ -37,15 +44,16 @@ szpathName = GetBufName(hBuf)
 szfileName = GetFileName(szpathName)
 nlength = StrLen(szfileName)
 // szInf = Ask("Enter the information of file:")
-szDescription = ""
+szDescription = Ask("请输入文件功能描述:")
+//szDescription = ""
 
 hbuf = GetCurrentBuf()
 InsBufLine(hbuf, 0, "/******************************************************************************")
 InsBufLine(hbuf, 1, " * Filename : @szfileName@")
-InsBufLine(hbuf, 2, " * Copyright: Copyright 2007 O2Micro, Inc")
+InsBufLine(hbuf, 2, " * Copyright: Huawei Technologies Co., Ltd. 2009-2019. All rights reserved.")
 InsBufLine(hbuf, 3, " * Created : @date@ by @szMyName@")
-InsBufLine(hbuf, 4, " * Description -")
-InsBufLine(hbuf, 5, " * @szDescription@")
+InsBufLine(hbuf, 4, " * Description: @szDescription@")
+InsBufLine(hbuf, 5, " * ")
 InsBufLine(hbuf, 6, " ******************************************************************************/")
 InsBufLine(hbuf, 7, "")
 
@@ -213,16 +221,15 @@ InsBufLine(hbuf, ln ++, " ")
 InsBufLine(hbuf, ln ++, " \\param ")
 InsBufLine(hbuf, ln ++, " \\return ")
 InsBufLine(hbuf, ln ++, " ")
-InsBufLine(hbuf, ln ++, " \\internal 其它的section标记(eg:\\\\todo,\\\\bug,\\\\example,\\\\remark,\\\\sa(see also),\\\\since,\\")
-InsBufLine(hbuf, ln ++, " \\\\throw,\\\\warning,\\\\deprecated)等放在这里或者放在历史记录中的版本描述中.")
+InsBufLine(hbuf, ln ++, " \\internal 其它的section标记(\\\\todo,\\\\bug,\\\\example,\\\\remark,\\\\sa(see also)\\")
+InsBufLine(hbuf, ln ++, " \\\\since,\\\\throw,\\\\warning,\\\\deprecated,etc)放在下面或者历史记录的说明后面.")
 InsBufLine(hbuf, ln ++, " ")
 InsBufLine(hbuf, ln ++, " \\internal 历史记录:")
 InsBufLine(hbuf, ln ++, " \\version 1.0")
 InsBufLine(hbuf, ln ++, " \\author @szMyName@")
 InsBufLine(hbuf, ln ++, " \\assessor ")
-InsBufLine(hbuf, ln ++, " \\create")
-InsBufLine(hbuf, ln ++, " time @date@")
-InsBufLine(hbuf, ln ++, " V1.0说明: 创建函数/类.")
+InsBufLine(hbuf, ln ++, " @date@")
+InsBufLine(hbuf, ln ++, " \\note V1.0说明: 创建函数/类.")
 InsBufLine(hbuf, ln ++, "*/")
 
 SetBufIns(hbuf, symLnFirst + 2, 7) // 光标停在详述之后
