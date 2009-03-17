@@ -96,6 +96,10 @@ macro GD_help()
  *  返 回 值       : 无
  *  其它说明   : 
         在函数/类中任何位置触发这个宏，就可以在该函数前面加上函数/类头
+
+        已知问题:
+        由于GetCurSymbol在模板类中任何地方都返回模板类名,
+        所以模板类只能自动加类头,函数头不能自动添加.
  *----------------------------------------------------------------------------  
  * 历史记录(变更单, 责任人@修改日期, 操作说明)  
  *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
@@ -125,7 +129,7 @@ macro GD_AddHeader()
     {
         szAlign = cat(szAlign, " ")
     }
-msg 1
+
     // 获取完整声明,不含注释
     symDeclare = gd_CurSymbolDeclare()
     if (symDeclare == "")
@@ -134,7 +138,7 @@ msg 1
     }
 
     szFunction = symDeclare
-msg szFunction    
+    
     // 获取参数信息
     // 解析模板参数 
     hTmpParams = hNil
@@ -151,9 +155,10 @@ msg szFunction
             szFunction = strmid(symDeclare, endPos + 1, strlen(symDeclare)) // 函数声明
         }
     }
-msg szFunction
+
     ret = ""
     //获取函数参数
+    hFuncParams = hNil
     if ((loc.Type == "Method") || (loc.Type == "Function"))
     {
         leftPos = gd_strfind(szFunction, "(")
@@ -170,7 +175,7 @@ msg szFunction
             ret = strmid(szFunction, 0, spacePos)
         }        
     }
-msg ret
+
     brief = Ask("请输入简述:")
     InsBufLine(hbuf, ln ++, szAlign # "/**")
     InsBufLine(hbuf, ln ++, szAlign # " @brief@.")    
@@ -187,7 +192,7 @@ msg ret
         while (i < count)
         {
             rec = GetBufLine(hTmpParams, i)
-            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.param # " ")
+            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.name # " ")
             i = i + 1
         }
         CloseBuf(hTmpParams)
@@ -202,7 +207,7 @@ msg ret
         while (i < count)
         {
             rec = GetBufLine(hFuncParams, i)
-            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.param # " ")
+            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.name # " ")
             i = i + 1
         }
         CloseBuf(hFuncParams)
@@ -865,6 +870,8 @@ macro gd_GetCurSymbolLoc()
 {
     symbol = GetCurSymbol()
 
+    //msg symbol
+
     hCurBuf = GetCurrentBuf()
     szCurFile = GetBufName(hCurBuf)
     lnCur = GetBufLnCur(hCurBuf)
@@ -905,6 +912,7 @@ macro gd_GetCurSymbolLoc()
     while (ln < count)
     {
         loc = GetBufLine(hbuf, ln)
+        //msg loc
         //msg (loc.file # " at line " # loc.lnFirst)
 
         if ((szCurFile == loc.file) && (loc.lnFirst <= lnCur))
@@ -1177,70 +1185,145 @@ macro gd_find_paramname(string)
 
 macro gd_getparam(string)
 {
+    string = gd_skipws(string)
     len = strlen(string)
     if (len <= 0)
     {
         return ""
     }
+
+    leftCnt = 0    // <的个数
+
+    rc = ""
+
+    i = 0
+    while ( i < len )
+    {
+        if ((string[i] == ",") && (leftCnt == 0)) // 不在<>中，且遇到逗号,说明找到一个参数结束标记
+        {
+            type_param = strmid(string, 0, i)            
+            rc = gd_ParseParam(type_param)
+            rc.remain = strmid(string, i + 1, len)
+            return rc;
+        }
+        if (string[i] == "<")
+        {
+            leftCnt = leftCnt + 1
+        }
+        else if (string[i] == ">")
+        {
+            if (leftCnt > 0)
+            {
+                leftCnt = leftCnt - 1
+            }
+            else
+            {
+                 msg("\"<\" and \">\" not match!")
+            }
+        }
+        i = i + 1
+    }
+
+    // 走到这里说明只有一个参数    
+    rc = gd_ParseParam(string)
+    rc.remain = ""
+    return rc;
+}
+
+// 去掉首尾的空白字符
+macro gd_strtrim(string)
+{
     string = gd_skipws(string)
-    len2 = strlen(string)
-    if (len2 <= 0)
+
+    len = strlen(string)
+    if (len <= 0)
     {
         return ""
     }
 
-    paramPos = gd_find_paramname(string)
-    tmpPos = gd_strfind(string, "<")
-
-    startPos = -1
-    if (((tmpPos == -1) || (paramPos.startPos < tmpPos)) && (paramPos.startPos >= 0)) // paramPos在<前
-    {
-        startPos = paramPos.startPos        
-    }
-    else
-    {
-        if (tmpPos > 0) // 有<, 需要配对
-        {
-            string = gd_jumpover_match(string, "<", ">")
-            string = gd_skipws(string)
-            paramPos = gd_find_paramname(string)
-            startPos = paramPos.startPos             
-        }
-    }
-
-    if (startPos == -1)
-    {
-        msg ("error: startPos == -1")
-        return ""
-    }
-
-    endPos = paramPos.endPos
-
-    if (endPos <= 0)
-    {
-        endPos = strlen(paramString)
-    }
-
-    rec = ""  // jelly:必须有这句话,否则下面对rec.param 赋值会出现rec不识别的错误.
-
-    if (endPos > 0)
-    {
-        rec.param = strmid(paramString, 0, endPos)
-        if (endPos < strlen(paramString))
-        {
-            rec.remain = strmid(paramString, endPos + 1, strlen(paramString))
-        }
-        else
-        {
-            rec.remain = ""
-        }
-        return rec
-    }
-
-    msg ("error: endPos <= 0")
-
-    return ""
+    bTailWs = False
     
+    i = len - 1
+    while ( i >= 0)
+    {
+        if ((string[i] == gd_space()) ||(string[i] == gd_table()))
+        {
+            i = i - 1
+            bTailWs = True
+            continue;
+        }
+        break
+    }
+
+    if (bTailWs)
+    {
+        string = strmid(string, 0, i + 1)
+    }
+    return string
+}
+
+macro gd_IsWhiteChar(ch)
+{
+    if ((ch == gd_space()) || (ch == gd_table()))
+    {
+        return TRUE
+    }
+
+    return FALSE
+}
+
+macro gd_ParseParam(string)
+{
+    rc = ""
+    rc.type = ""
+    rc.name = ""
+
+    string = gd_strtrim(string)
+    len = strlen(string)
+    if (len <= 0)
+    {
+        return rc
+    }
+
+    nameStart = gd_strrch_ws(string)
+    if (nameStart <= 0)
+    {
+        rc.type = string
+        rc.name = ""
+        return rc
+    }
+
+    // 如果有=则后面的是默认参数,需要重新找变量名
+    i = nameStart - 1
+    while (i >= 0)
+    {
+        if (gd_IsWhiteChar(string[i]))
+        {
+            i = i - 1
+            continue
+        }
+
+        if (string[i] == "=")
+        {
+            // 需要重新调整nameStart
+            string = strmid(string, 0, i)
+            string = gd_strtrim(string)
+            nameStart = gd_strrch_ws(string)
+            if (nameStart <= 0)
+            {
+                msg string # " = something , no var name." 
+                rc.type = string
+                rc.name = ""
+                return rc
+            }            
+        }
+        break
+    }
+
+    rc.type = gd_strtrim(strmid(string, 0, nameStart))
+    rc.name = gd_strtrim(strmid(string, nameStart, strlen(string)))
+
+    return rc
 }
 
 // 根据参数列表解析每个参数,保存每个参数的名字
@@ -1255,7 +1338,7 @@ macro gd_getparams(string)
     param = gd_getparam(string)
     while (param != "")
     {
-        rec = "param=\"" # param.param # "\""
+        rec = "type=\"" # param.type # "\";name=\"" # param.name # "\""
         AppendBufLine(hbuf, rec)
         param = gd_getparam(param.remain)
     }
