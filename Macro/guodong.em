@@ -13,6 +13,739 @@
 
 /* Franco.em - a small collection of useful editing macros */
 
+/*****************************************************************************
+ *  函数名称   : GD_setup
+ *  功能描述   : GD Source Insight命令设置.
+ *  输入参数   : 无
+ *  返 回 值       : 无
+ *  其它说明   : 如果该快捷键已分配,弹出提示,输入"yes"表示覆盖.
+ *----------------------------------------------------------------------------  
+ * 历史记录(变更单, 责任人@修改日期, 操作说明)  
+ *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
+ *----------------------------------------------------------------------------      
+ */
+macro GD_setup()
+{    
+    //GD_modifybase() 在批处理中修改Base工程加入这个文件
+
+    GD_setupkey()
+
+    GD_help()
+
+    stop
+}
+
+/*****************************************************************************
+ *  函数名称   : GD_setupkey
+ *  功能描述   : GD Source Insight命令设置.
+ *  输入参数   : 无
+ *  返 回 值       : 无
+ *  其它说明   : 如果该快捷键已分配,弹出提示,输入"yes"表示覆盖.
+ *----------------------------------------------------------------------------  
+ * 历史记录(变更单, 责任人@修改日期, 操作说明)  
+ *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
+ *----------------------------------------------------------------------------      
+ */
+macro GD_setupkey()
+{
+    g_gd_help = "" 
+
+    // Ctrl+Alt+H   添加函数头、类头。
+    gd_assignkey("h", "GD_AddHeader", "add class/function/struct/etc. header.")
+
+    // Ctrl+Alt+M  修改函数头、类头, 增加修改历史。
+    gd_assignkey("m", "GD_modifyheader", "modify class/function/struct/etc. header, add modify history.")
+}
+
+/*****************************************************************************
+ *  函数名称   : GD_help
+ *  功能描述   : GD Source Insight命令帮助.
+ *  输入参数   : 无
+ *  返 回 值       : 无
+ *  其它说明   : 
+  *----------------------------------------------------------------------------  
+ * 历史记录(变更单, 责任人@修改日期, 操作说明)  
+ *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
+ *---------------------------------------------------------------------------- 
+ */
+macro GD_help()
+{
+    hbuf = NewBuf("Guodong Command List") // create output buffer
+    if (hbuf == 0)
+    {
+        msg ("Create buffer fail!")
+        return
+    }
+
+    rc = gd_nextline(g_gd_help, 0)
+    while (rc != "")
+    {
+        AppendBufLine(hbuf, rc.line)
+        rc = gd_nextline(g_gd_help, rc.nextPos)
+    }
+    
+    SetCurrentBuf(hbuf) // put search results in a window
+    SetBufDirty(hbuf, FALSE); // don't bother asking to save
+
+}
+
+/*****************************************************************************
+ *  函数名称   : GD_addheader
+ *  功能描述   : 增加class/func/etc. header .
+ *  输入参数   : 无
+ *  返 回 值       : 无
+ *  其它说明   : 
+        在函数/类中任何位置触发这个宏，就可以在该函数前面加上函数/类头
+ *----------------------------------------------------------------------------  
+ * 历史记录(变更单, 责任人@修改日期, 操作说明)  
+ *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
+ *---------------------------------------------------------------------------- 
+ */
+macro GD_AddHeader()
+{
+    szMyName = gd_UserName()
+    
+    hbuf = GetCurrentBuf()
+    loc = gd_GetCurSymbolLoc()
+    if (loc == "") {
+    //   msg ("line: @ln@, focus should be in a function!")
+       return
+    }
+    ln = loc.lnFirst
+    symLnFirst = ln
+    date = gd_DateTime()
+    
+    // 获取函数定义前面空白字符个数,便于整体缩进.
+    szFirstLine = GetBufLine(hbuf, ln)
+    headws = gd_head_wsnum(szFirstLine)
+    
+    szAlign = ""
+    nTmp = headws.spaceCnt
+    while (nTmp--)
+    {
+        szAlign = cat(szAlign, " ")
+    }
+msg 1
+    // 获取完整声明,不含注释
+    symDeclare = gd_CurSymbolDeclare()
+    if (symDeclare == "")
+    {
+         return
+    }
+
+    szFunction = symDeclare
+msg szFunction    
+    // 获取参数信息
+    // 解析模板参数 
+    hTmpParams = hNil
+    keyWords = "template"
+    if ((strlen(symDeclare) > strlen(keyWords))) 
+    {
+        if ((keyWords == strmid(symDeclare, 0, strlen(keyWords))))
+        {
+            endPos = gd_strrch(symDeclare, ">")
+            beginPos = gd_strfind(symDeclare, "<") + 1
+            szTemplateParam = strmid(symDeclare, beginPos, endPos)
+            hTmpParams = gd_getparams(szTemplateParam)
+
+            szFunction = strmid(symDeclare, endPos + 1, strlen(symDeclare)) // 函数声明
+        }
+    }
+msg szFunction
+    ret = ""
+    //获取函数参数
+    if ((loc.Type == "Method") || (loc.Type == "Function"))
+    {
+        leftPos = gd_strfind(szFunction, "(")
+        rightPos = gd_strfind(szFunction, ")")
+        szFuncParams = strmid(szFunction, leftPos + 1, rightPos)
+        hFuncParams = gd_getparams(szFuncParams)
+    
+        //获取返回值类型
+        spacePos = gd_strfind(szFunction, " ")
+        spacePosT = gd_strfind(szFunction, "	")
+        spacePos = gd_min(spacePos, spacePosT)
+        if (spacePos > 0)
+        {
+            ret = strmid(szFunction, 0, spacePos)
+        }        
+    }
+msg ret
+    brief = Ask("请输入简述:")
+    InsBufLine(hbuf, ln ++, szAlign # "/**")
+    InsBufLine(hbuf, ln ++, szAlign # " @brief@.")    
+    InsBufLine(hbuf, ln ++, szAlign # " \\internal ********************************************************************")
+    InsBufLine(hbuf, ln ++, szAlign # " \\internal 其它说明(请先空一行) :")
+    InsBufLine(hbuf, ln ++, szAlign # " ")
+    InsBufLine(hbuf, ln ++, szAlign # " ")
+    // 有模板参数
+    if (hTmpParams != hNil)
+    {
+        InsBufLine(hbuf, ln ++, szAlign # " \\internal 模板参数:")
+        i = 0
+        count = GetBufLineCount(hTmpParams)
+        while (i < count)
+        {
+            rec = GetBufLine(hTmpParams, i)
+            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.param # " ")
+            i = i + 1
+        }
+        CloseBuf(hTmpParams)
+    }
+    
+    //有函数参数
+    if (hFuncParams != hNil)
+    {
+        InsBufLine(hbuf, ln ++, szAlign # " \\internal 函数参数:")
+        i = 0
+        count = GetBufLineCount(hFuncParams)
+        while (i < count)
+        {
+            rec = GetBufLine(hFuncParams, i)
+            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.param # " ")
+            i = i + 1
+        }
+        CloseBuf(hFuncParams)
+    }
+    if ((ret != "") && (ret != "void") && (ret != "VOID"))
+    {
+        ret_des = ""
+        if ((ret == "BOOL") || (ret == "bool"))
+        {
+            ret_des = "TRUE - 成功; FALSE - 失败."
+        }
+        InsBufLine(hbuf, ln ++, szAlign # " \\return " # szParamAlign # "@ret_des@")
+    }
+    InsBufLine(hbuf, ln ++, szAlign # " ")
+    InsBufLine(hbuf, ln ++, szAlign # " \\internal 历史记录:")
+    InsBufLine(hbuf, ln ++, szAlign # " \\internal --------------------------------------------------------------------")    
+    InsBufLine(hbuf, ln ++, szAlign # " \\version 1.0")
+    InsBufLine(hbuf, ln ++, szAlign # " \\author @szMyName@")
+    InsBufLine(hbuf, ln ++, szAlign # " \\assessor ")
+    InsBufLine(hbuf, ln ++, szAlign # " @date@")
+    InsBufLine(hbuf, ln ++, szAlign # " \\note V1.0说明: 创建" # loc.Type # ".")
+    InsBufLine(hbuf, ln ++, szAlign # " \\internal --------------------------------------------------------------------") 
+    InsBufLine(hbuf, ln ++, szAlign # "*/")
+    
+    SetBufIns(hbuf, loc.lnFirst + 5, 1) // 光标停在其它说明的起始位置
+}
+
+/*****************************************************************************
+ *  函数名称   : gd_SymbolDeclare
+ *  功能描述   : 获取当前函数/类等的完整的标识符声明
+ *  输入参数   : 无
+ *  返 回 值       : 无
+ *  其它说明   :  从lnFirst开始, 到"{"为止(不包括"{")，去掉注释。
+ *----------------------------------------------------------------------------  
+ * 历史记录(变更单, 责任人@修改日期, 操作说明)  
+ *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
+ *---------------------------------------------------------------------------- 
+ */
+macro gd_CurSymbolDeclare()
+{
+    loc = gd_GetCurSymbolLoc()
+
+    if (loc == "")
+    {
+        return ""
+    }
+    
+    ln = loc.lnFirst
+
+    hbuf = GetCurrentBuf()
+
+    rc = gd_ParseCodeInit()
+    while (true)
+    {
+        szLine = GetBufLine(hbuf, ln) 
+        decEnd = gd_strfind(szLine, "{")
+        if (/*(szLine == "") ||*/ (decEnd >= 0)) // 空行或者有{时终止
+        {
+            rc.pureCode = cat(rc.pureCode, strmid(szLine, 0, decEnd))
+            break
+        }
+        if (szLine == "")
+        {
+            break
+        }
+        rc = gd_ParseCodeLine(szLine, rc, True)
+        ln = ln + 1
+    }
+
+    return rc.pureCode
+}
+
+/*****************************************************************************
+ *  函数名称   : gd_ParseCodeInit
+ *  功能描述   : 解析代码的记录初始化.
+ *  输入参数   : 无
+ *  返 回 值       : 无
+ *  其它说明   :        
+ *----------------------------------------------------------------------------  
+ * 历史记录(变更单, 责任人@修改日期, 操作说明)  
+ *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
+ *---------------------------------------------------------------------------- 
+ */
+macro gd_ParseCodeInit()
+{
+    rc = ""
+    rc.bCommentSet = False
+    rc.bQuatoSet = False
+    rc.pureCode = ""
+    rc.nLines = 0
+    rc.nBlankLines = 0
+    rc.nCommentLines = 0
+    rc.nCodeLines = 0
+
+    return rc
+}
+
+/*****************************************************************************
+ *  函数名称   : gd_ParseCodeLine
+ *  功能描述   : 解析一行C/C++代码,获得除掉注释的纯代码
+ *  输入参数   : 无
+ *  返 回 值       : 无
+ *  其它说明   : 
+       除了得到纯代码，此函数还能用于统计代码行.
+       第一次调用, rc需要如下初始化(调用gd_ParseCodeInit() 即可)
+       rc.bCommentSet = False
+       rc.bQuatoSet = False
+       rc.pureCode = ""
+       rc.nLines = 0
+       rc.nBlankLines = 0
+       rc.nCommentLines = 0
+       rc.nCodeLines = 0
+ *----------------------------------------------------------------------------  
+ * 历史记录(变更单, 责任人@修改日期, 操作说明)  
+ *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
+ *---------------------------------------------------------------------------- 
+ */
+macro gd_ParseCodeLine(szLine, rc, needPureCode)
+{
+    global m_nStatMethod
+    m_nStatMethod = 1    
+    
+	bStatedComment = FALSE;//本行作为注释行是否已统计过
+	bStatedCode = FALSE;   //本行作为代码行是否已统计过
+
+	rc.nLines = rc.nLines + 1;
+
+	szLine = gd_skipws(szLine); //先将文件头的空格或制表符去掉
+
+	if(szLine == "") //为空白行
+	{
+		rc.nBlankLines = rc.nBlankLines + 1;
+		return rc
+	}
+
+	if(rc.bCommentSet && gd_strfind(szLine, "*/")==-1)
+	{
+		rc.nCommentLines = rc.nCommentLines + 1;
+		return rc
+	}
+
+	if(gd_strfind(szLine, "//")==-1 && gd_strfind(szLine, "/*")==-1 && gd_strfind(szLine, "*/")==-1)
+	{//如果本行根本就无注释符，则要不是注释符，要不是代码行
+		if(rc.bCommentSet)
+		{
+			rc.nCommentLines = rc.nCommentLines + 1; 
+			return rc
+		}
+		else
+		{
+			if(gd_strfind(szLine, '"')==-1)
+			{
+				rc.nCodeLines = rc.nCodeLines + 1; 
+				// 本行全是代码
+				if (needPureCode)
+				{
+				    rc.pureCode = cat(rc.pureCode, szLine)
+				}
+				return rc
+			}
+		}
+	}
+
+	if(gd_strfind(szLine, "//")==0 && !rc.bCommentSet && !rc.bQuatoSet)
+	{
+		rc.nCommentLines = rc.nCommentLines + 1;
+		return rc
+	}
+
+	bEndWithComment = False
+
+	bDoubleSplashFound = FALSE;
+	bSplashStarFound = FALSE;
+	i = 0
+	line_len = strlen(szLine) 
+	while (i < line_len - 1)
+	{
+	    if(!rc.bCommentSet)
+	    {
+	        // 字符szLine[i]是真正的代码,加上它
+			if (needPureCode)
+			{
+			    rc.pureCode = cat(rc.pureCode, szLine[i])
+			}
+	    }
+		if(szLine[i]=="/" && szLine[i+1]=="/" && !rc.bCommentSet && !rc.bQuatoSet)
+		{
+		    // 前面把/加入纯code了，需要去掉
+		    if (needPureCode)
+			{
+			    rc.pureCode = strmid(rc.pureCode, 0, strlen(rc.pureCode) - 1)
+			    bEndWithComment = TRUE
+			}
+			
+		    // 本行有//注释标记
+			if(!bStatedComment && (m_nStatMethod==1 || m_nStatMethod ==2))
+			{
+				bStatedComment = TRUE;
+				rc.nCommentLines = rc.nCommentLines + 1;
+			}
+			bDoubleSplashFound = TRUE;
+			i = i + 1
+			break;
+		}
+		else if(szLine[i]=="/" && szLine[i+1]=="*" && !rc.bCommentSet && !rc.bQuatoSet)
+		{
+		    // 前面把/加入纯code了，需要去掉
+		    if (needPureCode)
+			{
+			    rc.pureCode = strmid(rc.pureCode, 0, strlen(rc.pureCode) - 1)
+			}
+
+		    // 本行有/*注释标记
+			if(!bStatedComment && (m_nStatMethod==1 || m_nStatMethod ==2))
+			{
+				bStatedComment = TRUE;
+				rc.nCommentLines = rc.nCommentLines + 1;
+			}
+			rc.bCommentSet = TRUE;
+			bSplashStarFound = TRUE;
+			i = i + 1
+			i = i + 1 //continue 之前需要补充一个i++
+			continue
+		}
+		//计算代码行必须在bCommentSet关闭之前
+		else if(szLine[i]!=gd_space() && szLine[i]!=gd_table() && !rc.bCommentSet)
+		{		
+			if(!bStatedCode)
+			{
+				bStatedCode = TRUE;
+				rc.nCodeLines = rc.nCodeLines + 1;
+			}
+			if(szLine[i]=="\\")
+			{//\之后的字符要跳过
+				i = i + 1;
+				i = i + 1
+				continue;
+			}
+			if(szLine[i]=="\'")
+			{
+				if(szLine[i+1]=="\\")
+					i = i + 2;
+				else
+					i = i + 1;
+				i = i + 1
+				continue;
+			}
+			if(szLine[i]=="\"")
+			{//"必须引起重视，感谢ltzhou
+				rc.bQuatoSet = !rc.bQuatoSet;
+			}
+		}
+		else if(szLine[i]=="*" && szLine[i+1]=="/" && rc.bCommentSet && !rc.bQuatoSet)
+		{
+			if(!bStatedComment && (m_nStatMethod==1 || m_nStatMethod ==2))
+			{
+				bStatedComment = TRUE;
+				rc.nCommentLines = rc.nCommentLines + 1;
+			}
+			rc.bCommentSet = FALSE;
+			bSplashStarFound = TRUE;
+			i = i + 1;	
+
+			if ((i == line_len - 2)||(i == line_len - 1))
+			{
+			    bEndWithComment = TRUE
+			}
+		}
+
+		// 非continue都在这里自加
+		i = i + 1
+	}	
+
+	if (!bEndWithComment) // 不是以* /结束
+	{
+	    // 把最后一个字符加入代码
+		if (needPureCode)
+		{
+		    rc.pureCode = cat(rc.pureCode, szLine[line_len - 1])
+		}	
+	}
+
+	if(bDoubleSplashFound)
+	{
+		if(m_nStatMethod==2 && bStatedCode) //如果统计方法为第三种，且同时有代码行与注释行，则只计注释行
+		{
+			rc.nCodeLines = rc.nCodeLines - 1;
+		}
+		if(m_nStatMethod==0 && !bStatedCode)//如果统计方法为第一种，且未作为代码行统计过，那么必为注释行
+		{
+			rc.nCommentLines = rc.nCommentLines + 1;
+		}
+		return rc;
+	}
+
+	if(szLine[line_len - 1]=="\""&&!rc.bCommentSet)
+	{//若某行最后一个是"，则必定用来关闭bQuatoSet，记代码行一行，否则报错
+		rc.bQuatoSet = !rc.bQuatoSet;
+		if(!rc.bQuatoSet)
+		{
+			if(!bStatedCode)
+			{
+				bStatedCode = TRUE;
+				rc.nCodeLines = rc.nCodeLines + 1;
+			}
+		}
+		else
+		{
+		/*	CStdioFile fileLog;				
+			if(fileLog.Open(m_strLogFile, CFile::modeCreate|CFile::modeWrite|CFile::modeNoTruncate)==TRUE)
+			{
+				CString strMsg;
+				if(fileLog.GetLength()==0)
+				{
+					strMsg.Format("文件\t行\t问题\n", strFileName, nLines);
+					fileLog.WriteString(strMsg);
+				}
+				strMsg.Format("%s\t%d\t字符串换行未用\\\n", strFileName, nLines);
+				fileLog.WriteString(strMsg);
+				fileLog.Close();
+			}*/
+		}
+		return rc;
+	}
+
+	if(szLine[line_len-1]!=' ' && szLine[line_len-1]!='\t' && !rc.bCommentSet
+		&& szLine[line_len-2]!='*' && szLine[line_len-1]!='/')
+	{//如果最后一个字符非空格或制表符，且前面无/*，最后两个字符不是*/，则为代码行
+		if(!bStatedCode)
+		{
+			bStatedCode = TRUE;
+			rc.nCodeLines = rc.nCodeLines + 1;
+		}
+	}
+
+	if(bSplashStarFound)
+	{
+		if(m_nStatMethod==2 && bStatedCode) //如果统计方法为第三种，且同时有代码行与注释行，则只计注释行
+		{
+			rc.nCodeLines = rc.nCodeLines - 1;
+		}
+
+		if(m_nStatMethod==0 && !bStatedCode && !bStatedComment)	//若该行无代码如    /*abc*/ //222
+																//但是统计方法是第一种，则需要追加注释行计数一次
+		{
+			bStatedComment = TRUE;
+			rc.nCommentLines = rc.nCommentLines + 1;
+		}
+	}
+
+	if(!bStatedComment && rc.bCommentSet)//可能是前面有/*，在第一种统计方法中，未作为代码行计算过，那么本行肯定是注释行
+	{
+		if(m_nStatMethod==0 && !bStatedCode)
+		{
+			bStatedComment = TRUE;
+			rc.nCommentLines = rc.nCommentLines + 1;
+		}
+	}
+
+//		if(bQuatoSet && bufRead[bufRead.GetLength()-1]=='"')
+//		{
+//			bQuatoSet = FALSE;
+//		}
+
+	if(rc.bQuatoSet && szLine[line_len-1]!='\\')
+	{
+	/*	CStdioFile fileLog;
+		if(fileLog.Open(m_strLogFile, CFile::modeCreate|CFile::modeWrite|CFile::modeNoTruncate)==TRUE)
+		{
+			CString strMsg;
+			if(fileLog.GetLength()==0)
+			{
+				strMsg.Format("文件\t行\t问题\n", strFileName, nLines);
+				fileLog.WriteString(strMsg);
+			}
+			strMsg.Format("%s\t%d\t字符串换行未用\\\n", strFileName, nLines);
+			fileLog.WriteString(strMsg);
+			fileLog.Close();
+		}*/
+	}
+
+    // 少了这个则相当于return ""，会出现异常
+	return rc
+
+}
+
+// 判断nPos是否在字符串中
+macro gd_instring(szLine, nPos)
+{
+    bInStr = false
+    
+    quotCnt = 0
+    while (true)
+    {
+        quotPos = gd_strfind(szLine, "\"")
+        if (quotPos < 0)
+        {
+            break
+        }
+
+        if (quotPos < nPos)
+        {
+            if (quotCnt == 0)
+            {
+                quotCnt = 1
+            }
+            else
+            {
+                quotCnt = 0
+            }
+        }
+        else
+        {
+            break
+        }
+    }
+
+    if (quotCnt > 0)
+    {
+        // 是字符串
+        bInStr = true
+    }
+
+    return bInStr
+}
+
+macro gd_strfind_from(string, find, nFrom)
+{
+    if ((nFrom < 0) || (nFrom > strlen(string) - strlen(find)))
+    {
+        return -1
+    }
+    tempString = strmid(string, nFrom, strlen(string))
+    nFind = gd_strfind(tempString, find)
+    if (nFind < 0)
+    {
+        return -1
+    }
+
+    return nFrom + nFind
+}
+
+macro gd_nextline(string, nStart)
+{
+    if (nStart >= strlen(string))
+    {
+        return ""
+    }
+    
+    rc = ""
+
+    newline = gd_newline()
+    endPos = gd_strfind_from(string, newline, nStart)
+    if (endPos < 0)
+    {
+        rc.line = strmid(string, nStart, strlen(string))
+        rc.nextPos = strlen(string)
+    }
+    else
+    {
+        rc.line = strmid(string, nStart, endPos)
+        rc.nextPos = endPos + strlen(newline)
+    }
+
+    return rc
+}
+
+/*****************************************************************************
+ *  函数名称   : gd_get_username
+ *  功能描述   : 设置用户名字.
+ *  输入参数   : 无
+ *  返 回 值       : 无
+ *  其它说明   : 该用户名字会在自动生成的注释中出现.
+                                SourceInsight的环境变量在关机之后消失了,
+                                所以需要使用注册表.
+ *****************************************************************************/
+macro gd_UserName()
+{
+    return GetEnv("SI_USER")
+}
+
+/*****************************************************************************
+ *  函数名称   : gd_get_copyright
+ *  功能描述   : 获取版权信息.
+ *  输入参数   : 无
+ *  返 回 值       :版权字符串
+ *  其它说明   : .
+ *****************************************************************************/
+macro gd_Copyright()
+{
+    return GetEnv("SI_COPYRIGHT")
+}
+
+/*****************************************************************************
+ *  函数名称   : gd_assignkey
+ *  功能描述   : 分配快捷键给指定命令/宏.
+ *  输入参数   : key                -   单字节字符串, 与Ctrl,Alt一起构成快捷键.
+                              : cmd_name     -   命令名称或者宏的名字
+ *  返 回 值       : 无
+ *  其它说明   : 如果该快捷键已分配,弹出提示,输入"yes"表示覆盖.
+ *****************************************************************************/
+macro gd_assignkey(key, cmd_name, cmd_description)
+{
+    //KeyFromChar(char, fCtrl, fShift, fAlt)
+    
+    key_code = KeyFromChar(key, 1, 0, 1)
+    old_cmd = CmdFromKey(key_code)
+    if (old_cmd != "")
+    {
+        answer = Ask("Ctrl+Alt+@key@ has been assigned to @old_cmd@, replace it?(Input \"yes\" to replace, otherwise not replace)")
+        if (!(tolower(answer) == "yes"))
+        {
+            msg ("Assign Ctrl+Alt+@key@ to @cmd_name@ fail!")
+            return
+        }
+    }
+
+    // 分配快捷键给宏/命令, 如果已经分配该快捷键则被覆盖
+    AssignKeyToCmd(key_code, cmd_name)
+
+    // 在 全局变量中保存帮助信息
+    global g_gd_help
+
+    newline = gd_newline()
+    g_gd_help = cat(g_gd_help, "Ctrl+Alt+@key@                 :    @cmd_name@  @cmd_description@ @newline@")
+}
+
+macro gd_newline()
+{
+    // 注意字符串长度有意安排为与"@newline@"相同,便于用例设计
+    newline = "$$$^^^&&&"
+    //newline = cat(newline, CharFromAscii(13))
+    //newline = cat(newline, CharFromAscii(10)) // 这种方式也不能使得最后的输出换行
+    return newline
+}
+
+macro gd_print(hbuf)
+{
+    SetCurrentBuf(hbuf) // put search results in a window
+    SetBufDirty(hbuf, FALSE)  // don't bother asking to save
+    //CloseBuf(hbuf) // 不能close, close了就看不到了
+}
+
 macro getMyName()
 {
     // 从环境变量中获取用户姓名
@@ -128,7 +861,7 @@ macro GetCurSymbolLine()
 }
 
 // 找到当前函数/类的行号.(即使有函数重载也能支持)
-macro GetCurSymbolLoc()
+macro gd_GetCurSymbolLoc()
 {
     symbol = GetCurSymbol()
 
@@ -536,186 +1269,7 @@ macro gd_getparams(string)
     return hbuf
 }
 
-// 获取完整的标识符声明
-// 从lnFirst开始, 到"{"为止，去掉注释。
-macro gd_getsymboldec()
-{
-}
 
-/**
-在函数中任何位置触发这个宏，就可以在该函数前面加上函数/类头
-如果函数有多个重载形式，GetSymbolLine需要用户选择一个。去掉该函数调用。chenguodong
-*/
-macro MyInsFunHeader()
-{
-    szMyName = getMyName()
-    
-    hbuf = GetCurrentBuf()
-    //szFunc = GetCurSymbol()
-    //ln = GetSymbolLine(szFunc)
-    //if(ln < 0) {
-    //if (strlen(szFunc) <= 0)
-    loc = GetCurSymbolLoc()
-    if (loc == "") {
-    //   msg ("line: @ln@, focus should be in a function!")
-       return
-    }
-    ln = loc.lnFirst
-    symLnFirst = ln
-    date = getDateTime()
-    
-    // 获取函数定义前面空白字符个数,便于整体缩进.
-    szFirstLine = GetBufLine(hbuf, ln)
-    nSpaceCnt = 0
-    nWSCnt = 0
-    while (nSpaceCnt < strlen(szFirstLine)) 
-    {
-        if (szFirstLine[nSpaceCnt] == " ")//(AsciiFromChar(szFirstLine[nSpaceCnt]) != 32)
-        {
-            nSpaceCnt = nSpaceCnt + 1
-            nWSCnt = nWSCnt + 1
-        }
-        else if (szFirstLine[nSpaceCnt] == "	")
-        {
-            nSpaceCnt = nSpaceCnt + 4
-            nWSCnt = nWSCnt + 1
-        }
-        else
-        {
-            break
-        }
-        
-    }
-    //msg ("Line: " # szFirstLine # " nSpaceCnt: " # nSpaceCnt)
-    szAlign = ""
-    nTmp = nSpaceCnt
-    while (nTmp--)
-    {
-        szAlign = cat(szAlign, " ")
-    }
-    
-    // 获取参数信息
-    // 当前行或者上一行有template的需要考虑模板参数.(认为template不可能换行)
-    hTmpParams = hNil
-    keyWords = "template"
-    szFirstLine = gd_skipws(szFirstLine)
-    if ((strlen(szFirstLine) > strlen(keyWords))) // 当前行有模板
-    {
-        if ((keyWords == strmid(szFirstLine, 0, strlen(keyWords))))
-        {
-            endPos = gd_strrch(szFirstLine, ">")
-            beginPos = gd_strfind(szFirstLine, "<") + 1
-            szTemplateParam = strmid(szFirstLine, beginPos, endPos)
-            hTmpParams = gd_getparams(szTemplateParam)
-        }
-    }
-
-    if ((hTmpParams == hNil) && (symLnFirst >= 1)) // 查看上一行是否有template
-    {
-        szPrevLine = GetBufLine(hbuf, symLnFirst - 1)
-        szPrevLine = gd_skipws(szPrevLine)
-        if (strlen(szPrevLine) > strlen(keyWords))
-        {
-            if (keyWords == strmid(szPrevLine, 0, strlen(keyWords)))
-            {
-                endPos = gd_strrch(szPrevLine, ">")
-                beginPos = strlen(keyWords) + 1
-                szTemplateParam = strmid(szPrevLine, beginPos, endPos)
-                hTmpParams = gd_getparams(szTemplateParam)
-            }
-        }
-    }
-
-    ret = ""
-    //获取函数参数
-    if ((loc.Type == "Method") || (loc.Type == "Function"))
-    {
-        msg (szFirstLine)
-        leftPos = gd_strfind(szFirstLine, "(")
-        msg (szFirstLine # " leftPos is : " # leftPos)
-        rightPos = gd_strfind(szFirstLine, ")")
-        msg (szFirstLine # " rightPos is : " # rightPos)
-        szFuncParams = strmid(szFirstLine, leftPos + 1, rightPos)
-        msg (szFuncParams # " this is szFuncParams ")
-        hFuncParams = gd_getparams(szFuncParams)
-        msg (hFuncParams # " this is hFuncParams ")
-    
-        //获取返回值类型
-        spacePos = gd_strfind(szFirstLine, " ")
-        spacePosT = gd_strfind(szFirstLine, "	")
-        spacePos = gd_min(spacePos, spacePosT)
-        if (spacePos > 0)
-        {
-            ret = strmid(szFirstLine, 0, spacePos)
-        }        
-    }
-
-    brief = Ask("请输入简述:")
-    InsBufLine(hbuf, ln ++, szAlign # "/**")
-    InsBufLine(hbuf, ln ++, szAlign # " 简述: @brief@.")
-    InsBufLine(hbuf, ln ++, szAlign # " \\internal 详细描述写在下面(请先换行) ")
-    InsBufLine(hbuf, ln ++, szAlign # " ")
-    
-    // 有模板参数
-    if (hTmpParams != hNil)
-    {
-        InsBufLine(hbuf, ln ++, szAlign # " \\internal 模板参数:")
-        i = 0
-        count = GetBufLineCount(hTmpParams)
-        while (i < count)
-        {
-            rec = GetBufLine(hTmpParams, i)
-            InsBufLine(hbuf, ln ++, szAlign # " \\param " # rec.param # " ")
-            i = i + 1
-        }
-        CloseBuf(hTmpParams)
-    }
-    
-    //有函数参数
-    if (hFuncParams != hNil)
-    {
-        InsBufLine(hbuf, ln ++, szAlign # " \\internal 函数参数:")
-        i = 0
-        count = GetBufLineCount(hFuncParams)
-        while (i < count)
-        {
-            rec = GetBufLine(hFuncParams, i)
-            InsBufLine(hbuf, ln ++, szAlign # " \\param " # rec.param # " ")
-            i = i + 1
-        }
-        CloseBuf(hFuncParams)
-    }
-    if (ret != "") InsBufLine(hbuf, ln ++, szAlign # " \\return @ret@ ")
-    InsBufLine(hbuf, ln ++, szAlign # " ")
-    InsBufLine(hbuf, ln ++, szAlign # " \\internal 其它的section标记(\\\\todo,\\\\bug,\\\\example,\\\\remark,\\\\sa(see also)\\")
-    InsBufLine(hbuf, ln ++, szAlign # " \\\\since,\\\\throw,\\\\warning,\\\\deprecated,etc)放在下面或者历史记录的说明后面.")
-    InsBufLine(hbuf, ln ++, szAlign # " ")
-    InsBufLine(hbuf, ln ++, szAlign # " \\internal 历史记录:")
-    InsBufLine(hbuf, ln ++, szAlign # " \\version 1.0")
-    InsBufLine(hbuf, ln ++, szAlign # " \\author @szMyName@")
-    InsBufLine(hbuf, ln ++, szAlign # " \\assessor ")
-    InsBufLine(hbuf, ln ++, szAlign # " @date@")
-    InsBufLine(hbuf, ln ++, szAlign # " \\note V1.0说明: 创建" # loc.Type # ".")
-    InsBufLine(hbuf, ln ++, szAlign # "*/")
-    
-    SetBufIns(hbuf, symLnFirst + 3, nSpaceCnt + 1) // 光标停在详述之后
-}
-
-macro testDevelop()
-{
-    loc = GetCurSymbolLoc()
-    if (loc == "")
-    {
-        msg ("loc is null.")
-        return
-    }
-    msg (loc)
-    hbuf = GetCurrentBuf()
-    szFirstLine = GetBufLine(hbuf, loc.lnFirst)
-    msg ("szFirstLine : " # szFirstLine)
-    szNameLine = GetBufLine(hbuf, loc.lnName)
-    msg ("szNameLine : " # szNameLine)
-}
 
 /* insert head file define */
 macro MyInsHDef()
@@ -793,25 +1347,25 @@ while (i < nlength) {
 return name
 }
 
-macro getDate()
+macro gd_Date()
 { 
-szTime = GetSysTime(1)
-Year = szTime.Year
-Month = szTime.Month
-Day = szTime.Day
-return "@Year@-@Month@-@Day@"
+    szTime = GetSysTime(1)
+    Year = szTime.Year
+    Month = szTime.Month
+    Day = szTime.Day
+    return "@Year@-@Month@-@Day@"
 }
 
-macro getDateTime()
+macro gd_DateTime()
 { 
-szTime = GetSysTime(1)
-Year = szTime.Year
-Month = szTime.Month
-Day = szTime.Day
-Hour = szTime.Hour
-Minute = szTime.Minute
-Second = szTime.Second
-return "@Year@-@Month@-@Day@ @Hour@:@Minute@:@Second@"
+    szTime = GetSysTime(1)
+    Year = szTime.Year
+    Month = szTime.Month
+    Day = szTime.Day
+    Hour = szTime.Hour
+    Minute = szTime.Minute
+    Second = szTime.Second
+    return "@Year@-@Month@-@Day@ @Hour@:@Minute@:@Second@"
 }
 
 /******************************************************************************
