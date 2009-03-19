@@ -89,6 +89,22 @@ macro GD_help()
 
 }
 
+macro gd_ParamAlign(param)
+{
+    szParaAlign = ""
+    
+    szWhiteString = "                              "  // 30 space
+    nParaAlign = 14
+    
+    nParaLen = strlen(param)
+    if (nParaAlign > nParaLen)
+    {
+        szParaAlign = strtrunc(szWhiteString, nParaAlign - nParaLen)
+    }
+
+    return szParaAlign
+}
+
 /*****************************************************************************
  *  函数名称   : GD_addheader
  *  功能描述   : 增加class/func/etc. header .
@@ -107,6 +123,13 @@ macro GD_help()
  */
 macro GD_AddHeader()
 {
+    global horizon
+
+    if (horizon == "")
+    {
+        horizon = " \\internal --------------------------------------------------------------------"
+    }
+    
     szMyName = gd_UserName()
     
     hbuf = GetCurrentBuf()
@@ -121,6 +144,7 @@ macro GD_AddHeader()
     
     // 获取函数定义前面空白字符个数,便于整体缩进.
     szFirstLine = GetBufLine(hbuf, ln)
+    
     headws = gd_head_wsnum(szFirstLine)
     
     szAlign = ""
@@ -130,7 +154,12 @@ macro GD_AddHeader()
         szAlign = cat(szAlign, " ")
     }
 
-    // 获取完整声明,不含注释
+    if (gd_ModifyHeader(hbuf, ln, szAlign)) // 已经有头只是修改它
+    {
+        return
+    }
+
+    // 获取完整声明,不含注释(便于解析参数)
     symDeclare = gd_CurSymbolDeclare()
     if (symDeclare == "")
     {
@@ -180,7 +209,7 @@ macro GD_AddHeader()
     InsBufLine(hbuf, ln ++, szAlign # "/**")
     InsBufLine(hbuf, ln ++, szAlign # " @brief@.")    
     InsBufLine(hbuf, ln ++, szAlign # " \\internal ********************************************************************")
-    InsBufLine(hbuf, ln ++, szAlign # " \\internal 其它说明(请先空一行) :")
+    InsBufLine(hbuf, ln ++, szAlign # " 其它说明(请先空一行) :")
     InsBufLine(hbuf, ln ++, szAlign # " ")
     InsBufLine(hbuf, ln ++, szAlign # " ")
     // 有模板参数
@@ -192,7 +221,7 @@ macro GD_AddHeader()
         while (i < count)
         {
             rec = GetBufLine(hTmpParams, i)
-            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.name # " ")
+            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.name # gd_ParamAlign(rec.name) # " ")
             i = i + 1
         }
         CloseBuf(hTmpParams)
@@ -207,7 +236,7 @@ macro GD_AddHeader()
         while (i < count)
         {
             rec = GetBufLine(hFuncParams, i)
-            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.name # " ")
+            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.name # gd_ParamAlign(rec.name) #  " [" # gd_ParamTypeDescription(rec.type) # "]")
             i = i + 1
         }
         CloseBuf(hFuncParams)
@@ -219,20 +248,154 @@ macro GD_AddHeader()
         {
             ret_des = "TRUE - 成功; FALSE - 失败."
         }
-        InsBufLine(hbuf, ln ++, szAlign # " \\return " # szParamAlign # "@ret_des@")
+        InsBufLine(hbuf, ln ++, szAlign # " \\return  " # gd_ParamAlign("") # "@ret_des@")
     }
     InsBufLine(hbuf, ln ++, szAlign # " ")
     InsBufLine(hbuf, ln ++, szAlign # " \\internal 历史记录:")
-    InsBufLine(hbuf, ln ++, szAlign # " \\internal --------------------------------------------------------------------")    
+    InsBufLine(hbuf, ln ++, szAlign # horizon)    
     InsBufLine(hbuf, ln ++, szAlign # " \\version 1.0")
     InsBufLine(hbuf, ln ++, szAlign # " \\author @szMyName@")
     InsBufLine(hbuf, ln ++, szAlign # " \\assessor ")
     InsBufLine(hbuf, ln ++, szAlign # " @date@")
     InsBufLine(hbuf, ln ++, szAlign # " \\note V1.0说明: 创建" # loc.Type # ".")
-    InsBufLine(hbuf, ln ++, szAlign # " \\internal --------------------------------------------------------------------") 
+    InsBufLine(hbuf, ln ++, szAlign # horizon) 
     InsBufLine(hbuf, ln ++, szAlign # "*/")
     
     SetBufIns(hbuf, loc.lnFirst + 5, 1) // 光标停在其它说明的起始位置
+}
+
+macro gd_ModifyHeader(hbuf, ln, szAlign)
+{
+    if (ln < /*2*/ 5 ) // 前面不足两行, 实际的注释远远不止两行
+    {
+        return False
+    }
+    szPrevLine = GetBufLine(hbuf, ln - 1)
+    szPrevLine = gd_strtrim(szPrevLine)
+    if (szPrevLine != "*/")
+    {
+        return False
+    }
+
+    szPrevLine2 = GetBufLine(hbuf, ln - 2)
+    szPrevLine2 = gd_strtrim(szPrevLine2)
+    if (szPrevLine2 != gd_strtrim(horizon))
+    {
+        return False
+    }
+
+    // 依次往上读每一行,找到version
+    lastVersion = gd_LastVersion(hbuf, ln - 2)
+
+    if (lastVersion == "")
+    {
+        return False
+    }
+
+    thisVersion = gd_IncVersion(lastVersion)
+
+    description = Ask("请输入修改描述:")
+
+    // 函数声明前面是horizon和* /结尾的函数头，需要增加历史记录
+    ln = ln - 1
+    InsBufLine(hbuf, ln ++, szAlign # " \\version @thisVersion@")
+    InsBufLine(hbuf, ln ++, szAlign # " \\author " # gd_UserName())
+    InsBufLine(hbuf, ln ++, szAlign # " \\assessor ")
+    InsBufLine(hbuf, ln ++, szAlign # " " # gd_DateTime())
+    InsBufLine(hbuf, ln ++, szAlign # " \\note V@thisVersion@说明: " # description # ".")
+    InsBufLine(hbuf, ln ++, szAlign # horizon) 
+
+    return True
+}
+
+macro gd_LastVersion(hbuf, ln)
+{
+    versionStart = "\\version "
+    verStartLen = strlen(versionStart)
+    while (True)
+    {
+        ln = ln - 1
+        if (ln >= 0)
+        {
+            szLine = GetBufLine(hbuf, ln)
+            szLine = gd_strtrim(szLine)
+            if (gd_strfind(szLine, versionStart) == 0)
+            {
+                szLine = strmid(szLine, verStartLen, strlen(szLine))
+                return szLine
+            }
+        }
+        else
+        {
+            return ""
+        }
+    }
+
+    return ""
+}
+
+macro gd_IncVersion(lastVersion)
+{
+    lastVersion = gd_strtrim(lastVersion)
+    dotPos = gd_strfind(lastVersion, ".")
+    if (dotPos < 0)
+    {
+        if (IsNumber(lastVersion))
+        {
+            return lastVersion + 1
+        }
+        return lastVersion
+    }
+
+    mainVer = strmid(lastVersion, 0, dotPos)
+    subVer = strmid(lastVersion, dotPos + 1, strlen(lastVersion))
+
+    if (subVer >= 9)
+    {
+        mainVer = mainVer + 1
+        subVer = 0
+    }
+    else
+    {
+        subVer = subVer + 1
+    }
+
+    return mainVer # "." # subVer
+}
+
+/*****************************************************************************
+ *  函数名称   : gd_ParamTypeDescription
+ *  功能描述   :根据参数类型获得简要描述信息.
+ *  输入参数   : 无
+ *  返 回 值       : 无
+ *  其它说明   :  
+          处理规则很简单, 所有参数都有in属性,
+          非const 引用还有out属性.
+          使用者需要根据实际情况稍微修改.
+ *----------------------------------------------------------------------------  
+ * 历史记录(变更单, 责任人@修改日期, 操作说明)  
+ *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
+ *---------------------------------------------------------------------------- 
+ */
+macro gd_ParamTypeDescription(type)
+{
+    type = gd_strtrim(type);
+    len = strlen(type)
+    if (len <= 0)
+    {
+        return ""
+    }
+
+    szDes = "in"
+
+    constPos = gd_strfind_word(type, "const")
+
+    if ((constPos < 0) && (type[len - 1] == "&")) // 引用并且没有const修饰
+    {
+        szDes = cat(szDes, " out")
+    }
+
+    return szDes
 }
 
 /*****************************************************************************
@@ -767,7 +930,7 @@ macro MyInsFileHeader()
 {
 szMyName = getMyName()
 szTime = GetSysTime(1)
-date = getDate()
+date = gd_Date()
 Day = szTime.Day
 Month = szTime.Month
 Year = szTime.Year
@@ -788,7 +951,7 @@ szDescription = Ask("请输入文件功能描述:")
 hbuf = GetCurrentBuf()
 InsBufLine(hbuf, 0, "/******************************************************************************")
 InsBufLine(hbuf, 1, " * Filename : @szfileName@")
-InsBufLine(hbuf, 2, " * Copyright: Huawei Technologies Co., Ltd. 2009-2019. All rights reserved.")
+InsBufLine(hbuf, 2, " * Copyright: " # gd_Copyright())
 InsBufLine(hbuf, 3, " * Created : @date@ by @szMyName@")
 InsBufLine(hbuf, 4, " * Description: @szDescription@")
 InsBufLine(hbuf, 5, " * ")
@@ -974,6 +1137,49 @@ macro gd_strfind(string, find)
             return i
         }
         i = i + 1
+    }
+
+    return -1
+}
+
+// 查找整个单词(与strfind相比，限制词的开始和结束)
+macro gd_strfind_word(string, find)
+{
+    pos = gd_strfind(string, find)
+    if (pos < 0)
+    {
+        return -1
+    }
+
+    isBegin = FALSE
+    if (pos == 0)
+    {
+        isBegin = TRUE
+    }
+
+    if (!isBegin)
+    {
+        if (gd_IsWhiteChar(string[pos - 1]))
+        {
+            isBegin = TRUE
+        }
+        else
+        {
+            // 开始位置不是Word开始
+            return -1
+        }
+    }
+
+    endPos = pos + strlen(find)
+    if (endPos >= strlen(string))
+    {
+        // find结束也就是行结束
+        return pos
+    }
+
+    if (gd_IsWhiteChar(string[endPos]))
+    {
+        return pos
     }
 
     return -1
@@ -1318,6 +1524,21 @@ macro gd_ParseParam(string)
             }            
         }
         break
+    }
+ 
+    if ((string[nameStart + 1] == "&")||(string[nameStart + 1] == "*")) // 引用和指针符号可能紧接着变量名
+    {
+        nameStart = nameStart + 1
+        while ((string[nameStart] == "&")||(string[nameStart] == "*"))
+        {
+            nameStart = nameStart + 1
+            if (nameStart >= len)
+            {
+                // 正常情况不可能
+                //return rc
+                break
+            }
+        }
     }
 
     rc.type = gd_strtrim(strmid(string, 0, nameStart))
