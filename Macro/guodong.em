@@ -1,3 +1,24 @@
+/******************************************************************************
+ * 版权所有(C)  Huawei Technologies Co., Ltd. 2009-2019. All rights reserved.
+ *-----------------------------------------------------------------------------
+ * 模 块 名 : 
+ * 文件名称 : Guodong.em
+ * 文件标识 : {[N/A]}
+ * 功能描述 : 一组实用的Source Insight工具宏.
+ * 注意事项 : 
+ * 其它说明 : 
+ * 
+ * 历史记录 : 
+ *-----------------------------------------------------------------------------
+ * 版    本 : 1.0
+ * 问 题 单 : 
+ * 作    者 : chenguodong
+ * 时    间 : 2009-3-15 19:38:15
+ * 修改说明 : 创建文件
+ * 
+ *-----------------------------------------------------------------------------
+ */
+
 /*说明:
 该宏文件实现一些编码程中能会到的功能, 如添加文件头、函数说明和宏定义等, 
 使用时能自动添加文件名、函数名和当前日期.
@@ -9,9 +30,28 @@
 3. Options->Menu Assignments 打开Menu Assignments窗口, 在Command中输入Macro, 
 选中要使用的宏, 添加到合适的菜单中.
 
+注意: 如果Source Insight比 V3.50.0063版本要老, 需要做如下修改:
+1 把global全局变量的使用改成另外的形式.
+2 把ln++等位置换成ln = ln + 1
+
+批处理自动完成安装实现原理:
+
+1、打开Base工程(如果已经打开其它工程将关闭)
+insight3 -p "%USERPROFILE%\My Documents\Source Insight\Projects\Base\Base.PR"
+
+2、文件同步
+insight3 -ub
+
+3、通过insight3.exe" -c GD_ModifyBase方式调用命令或者宏.
+
+4、SI宏中可以以环境变量方式访问dos变量。
+
+5、把em文件复制到Base工程目录, 
+       然后使用SyncProjEx(hprj, fAddNewFiles, fForceAll, fSupressWarnings)把后面三个参数
+       设为TRUE，则能够把em文件增加进工程，能够使得其中的宏可以被调用.
+
 */
 
-/* Franco.em - a small collection of useful editing macros */
 
 /*****************************************************************************
  *  函数名称   : GD_setup
@@ -26,13 +66,24 @@
  */
 macro GD_setup()
 {    
-    //GD_modifybase() 在批处理中修改Base工程加入这个文件
+    GD_ModifyBase() //在批处理中修改Base工程加入这个文件
 
     GD_setupkey()
 
     GD_help()
 
-    stop
+    //stop
+}
+
+macro GD_ModifyBase()
+{
+   hprj = OpenProj(GetEnv("SI_BASE_PRJ")); // 打开Base工程, SI_BASE_PRJ -- Base工程路径
+   //msg GetEnv("SI_BASE_PRJ")
+   //AddFileToProj(hprj, GetEnv("SI_EM_FILE")); //似乎不好用, 不能找到em中的函数 // SI_EM_FILE -- Source Insight 宏文件
+   //msg GetEnv("SI_EM_FILE")
+   //SyncProj(hprj)
+   SyncProjEx(hprj, TRUE, TRUE, TRUE)
+   CloseProj(hprj)    
 }
 
 /*****************************************************************************
@@ -50,11 +101,21 @@ macro GD_setupkey()
 {
     g_gd_help = "" 
 
-    // Ctrl+Alt+H   添加函数头、类头。
-    gd_assignkey("h", "GD_AddHeader", "add class/function/struct/etc. header.")
+    // Ctrl+Alt+H   添加/修改函数头、类头。
+    gd_assignkey("h", "GD_AddHeader", "Add/modify class/function/etc. header.")
 
-    // Ctrl+Alt+M  修改函数头、类头, 增加修改历史。
-    gd_assignkey("m", "GD_modifyheader", "modify class/function/struct/etc. header, add modify history.")
+    // Ctrl+Alt+F  添加/修改文件头
+    gd_assignkey("f", "GD_AddFileHeader", "Add/modify file header.")
+
+    // Ctrl+Alt+O  cpp/h文件切换.
+    gd_assignkey("o", "GD_SHSwitch", "Source/Header switch.")
+    stop
+
+    // Ctrl+Alt+A  自动添加所有工程目录中的文件
+    gd_assignkey("a", "GD_AddFiles", "Add all files in project dir.")
+
+    // Ctrl+Alt+E 打开当前文件所在目录    
+    gd_assignkey("e", "GD_OpenExplorer", "Open current file dir.")
 }
 
 /*****************************************************************************
@@ -87,6 +148,206 @@ macro GD_help()
     SetCurrentBuf(hbuf) // put search results in a window
     SetBufDirty(hbuf, FALSE); // don't bother asking to save
 
+}
+
+macro gd_GetFileDir(file)
+{
+    pos = gd_strrch(file, "\\")
+    if (pos < 0)
+    {
+        return file
+    }
+
+    return strmid(file, 0, pos)
+}
+
+macro GD_OpenExplorer()
+{
+    //ShellExecute open explorer /e,/select,%f
+    
+    hbuf = GetCurrentBuf()    
+    szCurPathName = GetBufName(hbuf)
+    //ShellExecute ("open", szCurPathName, "explorer /e,/select", "", 1) // 这样打开文件了
+    ShellExecute ("open", gd_GetFileDir(szCurPathName), "explorer /e,/select", "", 1)
+    //stop
+}
+
+macro GD_TortoiseSVNCommit()
+{
+    //"C:\Program Files\TortoiseSVN\bin\TortoiseProc.exe" /command:commit /path:%f /notempfile /closeonend
+
+    exePath = GetEnv("TortoiseSVN_PATH")
+
+    //msg exePath
+
+    hbuf = GetCurrentBuf()    
+    szCurPathName = GetBufName(hbuf)
+    //ShellExecute ("open", szCurPathName, "\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", 1)
+    ShellExecute ("open", "\"@exePath@\"", "/command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", 1)
+    //RunCmd("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend")
+    //RunCmdLine ("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", TRUE)
+    
+    stop
+}
+
+/*
+macro gd_FileNamePair(file1, file2)
+{
+    file1 = gd_strtrim(file1)
+    file2 = gd_strtrim(file2)
+    len1 = strlen(file1)
+    len2 = strlen(file2)
+    if ((len1 <= 0) || (len2 <= 0))
+    {
+        return False
+    }
+    len = gd_min(len1, len2)
+    i = 0
+    while (i < len)
+    {
+        if (file1[i] != file2[i])
+        {
+            break
+        }
+        i = i + 1
+    }
+
+    suffix1 = strmid(file1, i, len1)
+    suffix2 = strmid(file2, i, len2)
+
+    if ((((suffix1 == "h") || (suffix1 == "hpp") || (suffix1 == "hxx")) && ((suffix2 == "c") || (suffix2 == "cpp") || (suffix2 == "cxx")))
+     || (((suffix2 == "h") || (suffix2 == "hpp") || (suffix2 == "hxx")) && ((suffix1 == "c") || (suffix1 == "cpp") || (suffix1 == "cxx"))))
+    {
+        return True
+    }
+
+    return False
+}
+
+/// 这个函数能够完成功能，但是需要搜索函数表,太慢
+macro GD_SHSwitch()
+{
+    // 获取当前文件名
+    hbuf = GetCurrentBuf()    
+    szCurPathName = GetBufName(hbuf)
+    szCurFileName = GetFileName(szCurPathName)
+    //msg szCurFileName
+
+    hprj = GetCurrentProj()
+    ifileMax = GetProjFileCount (hprj)
+    ifile = 0
+    while (ifile < ifileMax)
+    {
+        filename = GetProjFileName (hprj, ifile) // filename是相对路径
+        bearfilename = GetFileName(filename)
+        //msg filename
+        if (gd_FileNamePair(bearfilename, szCurFileName))
+        {
+            break
+        }
+        ifile = ifile + 1
+    }
+
+    if (ifile >= ifileMax)
+    {
+        msg "File not in project file list."
+        return
+    }
+
+    //hPairFile = GetBufHandle (filename) // filename原来是打开的才能找得到它的buf
+    hPairFile = OpenBuf (filename) // 这里只传文件名不能打开
+    if (hPairFile == hNil)
+    {
+        msg "File(" # filename # ") not found"
+        return
+    }
+    SetCurrentBuf (hPairFile) // 显示文件
+}
+*/
+
+macro gd_FileSuffix(file)
+{
+    pos = gd_strrch(file, ".")
+
+    if (pos <= 0)
+    {
+        return ""
+    }
+
+    return strmid(file, pos, strlen(file))
+}
+
+macro gd_SuffixReplace(file, suffix)
+{
+    pos = gd_strrch(file, ".")
+
+    if (pos <= 0)
+    {
+        return ""
+    }
+
+    strTmp = strmid(file, 0, pos)
+    strTmp = cat(strTmp, suffix)
+
+    return strTmp
+}
+
+macro GD_SHSwitch()
+{
+    // 获取当前文件名
+    hbuf = GetCurrentBuf()    
+    szCurPathName = GetBufName(hbuf)
+    szCurFileName = GetFileName(szCurPathName)
+    //msg szCurFileName
+
+    filename = ""
+    hPairFile = hNil
+    szSuffix = gd_FileSuffix(szCurFileName)
+    if ((szSuffix == ".cpp") || (szSuffix == ".c") || (szSuffix == ".cxx"))
+    {
+        filename = gd_SuffixReplace(szCurFileName, ".h")
+        hPairFile = OpenBuf (filename)
+        if (hPairFile == hNil)
+        {
+            filename = gd_SuffixReplace(szCurFileName, ".hpp")
+            hPairFile = OpenBuf (filename)
+            if (hPairFile == hNil)
+            {
+                filename = gd_SuffixReplace(szCurFileName, ".hxx")
+                hPairFile = OpenBuf (filename)
+                if (hPairFile == hNil)
+                {
+                    return
+                }
+            }
+        }
+    }
+    else if ((szSuffix == ".h") || (szSuffix == ".hpp") || (szSuffix == ".hxx"))
+    {
+        filename = gd_SuffixReplace(szCurFileName, ".cpp")
+        hPairFile = OpenBuf (filename)
+        if (hPairFile == hNil)
+        {
+            filename = gd_SuffixReplace(szCurFileName, ".c")
+            hPairFile = OpenBuf (filename)
+            if (hPairFile == hNil)
+            {
+                filename = gd_SuffixReplace(szCurFileName, ".cxx")
+                hPairFile = OpenBuf (filename)
+                if (hPairFile == hNil)
+                {
+                    return
+                }
+            }
+        }
+    }
+
+    SetCurrentBuf (hPairFile) // 显示文件
+}
+
+macro GD_AddFiles()
+{
+    SyncProjEx(GetCurrentProj(), TRUE, TRUE, TRUE)
 }
 
 macro gd_ParamAlign(param)
@@ -167,6 +428,8 @@ macro GD_AddHeader()
     }
 
     szFunction = symDeclare
+
+    brief = Ask("请输入简述:")  // 注意Ask要放在NewBuf之前,否则用户取消之后就有buf未释放
     
     // 获取参数信息
     // 解析模板参数 
@@ -204,8 +467,7 @@ macro GD_AddHeader()
             ret = strmid(szFunction, 0, spacePos)
         }        
     }
-
-    brief = Ask("请输入简述:")
+    
     InsBufLine(hbuf, ln ++, szAlign # "/**")
     InsBufLine(hbuf, ln ++, szAlign # " @brief@.")    
     InsBufLine(hbuf, ln ++, szAlign # " \\internal ********************************************************************")
@@ -236,6 +498,10 @@ macro GD_AddHeader()
         while (i < count)
         {
             rec = GetBufLine(hFuncParams, i)
+            if (rec.name == "") // 入参为void特殊处理
+            {
+                break
+            }
             InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.name # gd_ParamAlign(rec.name) #  " [" # gd_ParamTypeDescription(rec.type) # "]")
             i = i + 1
         }
@@ -285,7 +551,7 @@ macro gd_ModifyHeader(hbuf, ln, szAlign)
     }
 
     // 依次往上读每一行,找到version
-    lastVersion = gd_LastVersion(hbuf, ln - 2)
+    lastVersion = gd_LastVersion(hbuf, ln - 2, "\\version ")
 
     if (lastVersion == "")
     {
@@ -308,9 +574,151 @@ macro gd_ModifyHeader(hbuf, ln, szAlign)
     return True
 }
 
-macro gd_LastVersion(hbuf, ln)
+macro GD_AddFileHeader()
 {
-    versionStart = "\\version "
+    headStartLine = "/******************************************************************************"
+    headCopyright = " * 版权所有(C)  " # gd_Copyright()
+    headInsertion = " *-----------------------------------------------------------------------------"
+    headVerStart  = " * 版    本 : "
+    headEndLine   = " */"
+
+    hbuf = GetCurrentBuf()
+
+    if (gd_ModifyFileHeader(hbuf))
+    {
+        return
+    }
+    
+    szpathName = GetBufName(hbuf)
+    szfileName = GetFileName(szpathName)
+    nlength = StrLen(szfileName)
+    // szInf = Ask("Enter the information of file:")
+    szDescription = Ask("请输入文件功能描述:")
+    //szDescription = ""
+    
+    //hbuf = GetCurrentBuf()
+    ln = 0
+    InsBufLine(hbuf, ln, headStartLine)
+    ln = ln + 1
+    InsBufLine(hbuf, ln, headCopyright)
+    ln = ln + 1
+    InsBufLine(hbuf, ln, headInsertion)
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 模 块 名 : ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 文件名称 : @szfileName@")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 文件标识 : {[N/A]}")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 功能描述 : @szDescription@")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 注意事项 : ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 其它说明 : ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 历史记录 : ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, headInsertion)
+    ln = ln + 1
+    InsBufLine(hbuf, ln, headVerStart # "1.0")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 问 题 单 : ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 作    者 : " # gd_UserName())
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 时    间 : " # gd_DateTime())
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 修改说明 : 创建文件")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, headInsertion)
+    ln = ln + 1
+    InsBufLine(hbuf, ln, headEndLine)
+    
+    SetBufIns(hbuf, 8, 14)
+}
+
+macro gd_ModifyFileHeader(hbuf)
+{
+    headStartLine = "/******************************************************************************"
+    headCopyright = " * 版权所有(C)  " # gd_Copyright()
+    headInsertion = " *-----------------------------------------------------------------------------"
+    headVerStart  = " * 版    本 : "
+    headEndLine   = " */"
+    
+    szLine = GetBufLine(hbuf, 0)
+    if (gd_strtrim(szLine) != gd_strtrim(headStartLine)) // 起始行不匹配
+    {
+        return False
+    }
+
+    szLine = GetBufLine(hbuf, 1)
+    if (gd_strtrim(szLine) != gd_strtrim(headCopyright)) // 版权行不匹配
+    {
+        return False
+    }
+
+    szLine = GetBufLine(hbuf, 2)
+    if (gd_strtrim(szLine) != gd_strtrim(headInsertion)) // 第三行的插入行不匹配
+    {
+        return False
+    }
+
+    // 以上都匹配直接找到头注释末尾
+    lineCnt = GetBufLineCount(hbuf)
+    
+    i = 3    
+    while (True)
+    {
+        szLine = GetBufLine(hbuf, i)
+        if (gd_strtrim(szLine) == "*/")
+        {
+            break
+        }
+        i = i + 1
+        if (i >= lineCnt)
+        {
+            return False
+        }
+    }
+
+    thisVersion = "1.0"
+
+    // 依次往上读每一行,找到version
+    lastVersion = gd_LastVersion(hbuf, i, headVerStart)
+
+    if (lastVersion != "")
+    {
+        thisVersion = gd_IncVersion(lastVersion)
+    }    
+
+    description = Ask("请输入修改描述:")
+
+    // 函数声明前面是horizon和* /结尾的函数头，需要增加历史记录
+    ln = i   
+    InsBufLine(hbuf, ln, " * 版    本 : " # thisVersion)
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 问 题 单 : ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 作    者 : " # gd_UserName())
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 时    间 : " # gd_DateTime())
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * 修改说明 : " # description)
+    ln = ln + 1
+    InsBufLine(hbuf, ln, " * ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln, headInsertion)
+
+    return True
+}
+
+macro gd_LastVersion(hbuf, ln, versionStart)
+{
+    versionStart = gd_skipws(versionStart)
     verStartLen = strlen(versionStart)
     while (True)
     {
