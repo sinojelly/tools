@@ -137,6 +137,7 @@ macro GD_setupkey()
     //stop
 
     // Ctrl+Alt+L    Lint当前文件.
+    gd_assignkey("l", "GD_Lint", "Lint current file.")
 
     // Ctrl+Alt+R   执行指定的批处理/可执行文件.(可以用来编译/Lint整个工程/运行文件)
     // 指定可执行文件、运行目录、参数
@@ -178,6 +179,16 @@ macro GD_help()
     
     SetCurrentBuf(hbuf) // put search results in a window
     SetBufDirty(hbuf, FALSE); // don't bother asking to save
+
+}
+
+// proj目录下有Lint\lint.bat，带有一个参数"待lint的文件"
+macro GD_Lint()
+{
+    projDir = GetProjDir(GetCurrentProj())
+    hbuf = GetCurrentBuf()    
+    szCurPathName = GetBufName(hbuf)
+    ShellExecute ("open", "\"@projDir@\\Lint\\lint.bat\"", "\"@szCurPathName@\"", "", 1)
 
 }
 
@@ -257,6 +268,16 @@ macro GD_Comment()
     }
 }
 
+macro gd_CatPath(dir, file)
+{
+    if (gd_strright(dir, 1)!="\\")
+    {
+        dir = cat(dir, "\\")
+    }
+
+    return cat(dir, file)
+}
+
 macro GD_SourceMonitor()
 {
     //"D:\Tools\CMD\SourceMonitor\SourceMonitor.exe" /DC++ %f   当前文件
@@ -264,9 +285,38 @@ macro GD_SourceMonitor()
 
     exePath = GetEnv("SRCMONITOR_PATH")
 
-    hbuf = GetCurrentBuf()    
-    szCurPathName = GetBufName(hbuf)
-    ShellExecute ("open", "\"@exePath@\"", "/DC++ @szCurPathName@", "", 1)
+    hwnd = GetCurrentWnd()
+    lnFirst = GetWndSelLnFirst(hwnd)
+    lnLast = GetWndSelLnLast(hwnd)
+    hbuf = GetCurrentBuf()
+    
+    if(lnLast > lnFirst) // 选中多行则统计选中代码
+    {
+        //szText = GetBufSelText(hbuf)
+        hTemp = NewBuf("Select")
+        i = lnFirst
+        lnLastLimit = lnLast + 1
+        while (i < lnLastLimit) // 注意要加1，否则选中中的最后一行未被复制.
+        {
+            szLine = GetBufLine(hbuf, i)
+            AppendBufLine(hTemp, szLine)
+            i = i + 1
+        }
+        tempDir = GetEnv("TEMP")
+        if (tempDir == "")
+        {
+            tempDir = "C:\\Temp"
+        }
+        tempFile = gd_CatPath(tempDir, "gd_si_select.cpp")
+        SaveBufAs (hTemp, tempFile)
+        CloseBuf(hTemp)
+    }
+    else
+    {
+        tempFile = GetBufName(hbuf)  // 当前文件
+    }
+    
+    ShellExecute ("open", "\"@exePath@\"", "/DC++ @tempFile@", "", 1)
 
 }
 
