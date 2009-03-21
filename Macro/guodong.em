@@ -99,7 +99,13 @@ macro GD_ModifyBase()
  */
 macro GD_setupkey()
 {
+    // 老版本的不支持全局变量,如何显示帮助?
+    
     g_gd_help = "" 
+
+    // 设置功能组合基础键
+    // 设为Alt, 用起来比较方便
+    global g_gd_
 
     // Ctrl+Alt+H   添加/修改函数头、类头。
     gd_assignkey("h", "GD_AddHeader", "Add/modify class/function/etc. header.")
@@ -109,13 +115,38 @@ macro GD_setupkey()
 
     // Ctrl+Alt+O  cpp/h文件切换.
     gd_assignkey("o", "GD_SHSwitch", "Source/Header switch.")
-    stop
 
     // Ctrl+Alt+A  自动添加所有工程目录中的文件
     gd_assignkey("a", "GD_AddFiles", "Add all files in project dir.")
 
     // Ctrl+Alt+E 打开当前文件所在目录    
     gd_assignkey("e", "GD_OpenExplorer", "Open current file dir.")
+
+    // Ctrl+Alt+C 归档当前文件   
+    gd_assignkey("c", "GD_TortoiseSVNCommit", "Commit current file to SVN server.")
+
+    // Ctrl+Alt+S 统计当前文件代码行(如果选中代码则是选中代码行)
+
+    // Ctrl+Alt+M Measure 统计当前文件圈复杂度(如果选中代码则是选中代码圈复杂度)
+    gd_assignkey("m", "GD_SourceMonitor", "Run SourceMonitor check current file or selected code.")
+
+    // Ctrl+Alt+F1  显示帮助信息, 包括doxys帮助
+
+    // Ctrl+Alt+B    注释/反注释选中的代码行
+    gd_assignkey("b", "GD_Comment", "Comment/Uncomment the selected content.")
+    //stop
+
+    // Ctrl+Alt+L    Lint当前文件.
+
+    // Ctrl+Alt+R   执行指定的批处理/可执行文件.(可以用来编译/Lint整个工程/运行文件)
+    // 指定可执行文件、运行目录、参数
+    // 可能需要自己写一个ComboBox列表的应用程序,返回选中的文件字符串给SI
+    // 在自己的应用程序中写一个批处理,然后再在macro中调用.
+    // 研究一下Ask的机制.
+    // 另外，通过抓窗口能实现自动加入命令
+    // gd_assignkey("r", "GD_RunCmd", "Run the specified command.")
+
+    // 自己常用的快捷键由于Fn的关系，使用不方便,把这些快捷键重新定义
 }
 
 /*****************************************************************************
@@ -150,6 +181,95 @@ macro GD_help()
 
 }
 
+// 取string的最前面n个字符
+macro gd_strleft(string, n)
+{
+    len = strlen(string)
+    if (n >= len)
+    {
+        return string
+    }
+    return strmid(string, 0, n)
+}
+
+// 取string的最前面n个字符
+macro gd_strright(string, n)
+{
+    len = strlen(string)
+    if (n >= len)
+    {
+        return string
+    }
+    return strmid(string, len - n, len)
+}
+
+/// 注释/反注释选中的代码
+macro GD_Comment()
+{
+    hwnd = GetCurrentWnd()
+    lnFirst = GetWndSelLnFirst(hwnd)
+    lnLast = GetWndSelLnLast(hwnd)
+    hbuf = GetCurrentBuf()
+    
+    if(lnLast == lnFirst) 
+    {
+       hbufText = GetBufSelText(hbuf)
+       szTemp = gd_strtrim(hbufText)
+       if ((gd_strleft(szTemp,2)=="/*") && (gd_strright(szTemp,2)=="*/")) //Uncomment
+       {
+           szCode = gd_strreplace(hbufText, "/*", "")
+           szCode = gd_strreplace(szCode, "*/", "")
+           SetBufSelText(hbuf, szCode)
+           return
+       }
+       SetBufSelText(hbuf, "/*@hbufText@*/")       
+    }
+    else 
+    {
+       szFirst = GetBufLine(hbuf, lnFirst)
+       szLast = GetBufLine(hbuf, lnLast)
+       szFirstTmp = gd_strtrim(szFirst)
+       szLastTmp = gd_strtrim(szLast)
+       if ((gd_strleft(szFirstTmp,2)=="/*") && (gd_strright(szLastTmp,2)=="*/")) //Uncomment
+       {
+           DelBufLine(hbuf, lnFirst)
+           bInsFirst =False
+           if (strlen(szFirstTmp) > 2) // 如果改行只有/ *, 则删除该行
+           {
+               bInsFirst = True
+               InsBufLine(hbuf, lnFirst, gd_strreplace(szFirst, "/*", ""))
+           }
+           lnLastNew = lnLast
+           if (!bInsFirst)
+           {
+               lnLastNew = lnLast - 1
+           }
+           DelBufLine(hbuf, lnLastNew)
+           if (strlen(szLastTmp) > 2) // 如果改行只有/ *, 则删除该行
+           {
+               InsBufLine(hbuf, lnLastNew, gd_strreplace(szLast, "*/", ""))
+           }
+           return
+       }
+       InsBufLine(hbuf, lnFirst, "/* ")
+       InsBufLine(hbuf, lnLast+2, "*/") 
+       SetBufIns( hbuf,lnFirst,3)
+    }
+}
+
+macro GD_SourceMonitor()
+{
+    //"D:\Tools\CMD\SourceMonitor\SourceMonitor.exe" /DC++ %f   当前文件
+    //"D:\Tools\CMD\SourceMonitor\SourceMonitor.exe" /DC++ %s   选中代码
+
+    exePath = GetEnv("SRCMONITOR_PATH")
+
+    hbuf = GetCurrentBuf()    
+    szCurPathName = GetBufName(hbuf)
+    ShellExecute ("open", "\"@exePath@\"", "/DC++ @szCurPathName@", "", 1)
+
+}
+
 macro gd_GetFileDir(file)
 {
     pos = gd_strrch(file, "\\")
@@ -168,7 +288,8 @@ macro GD_OpenExplorer()
     hbuf = GetCurrentBuf()    
     szCurPathName = GetBufName(hbuf)
     //ShellExecute ("open", szCurPathName, "explorer /e,/select", "", 1) // 这样打开文件了
-    ShellExecute ("open", gd_GetFileDir(szCurPathName), "explorer /e,/select", "", 1)
+    ShellExecute ("open", gd_GetFileDir(szCurPathName), "explorer /e,/select", "", 1) // OK
+    //ShellExecute ("open", "explorer", "/e,/select \"@szCurPathName@\"", "", 1) // NOK
     //stop
 }
 
@@ -187,7 +308,7 @@ macro GD_TortoiseSVNCommit()
     //RunCmd("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend")
     //RunCmdLine ("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", TRUE)
     
-    stop
+    //stop
 }
 
 /*
@@ -1289,10 +1410,20 @@ macro gd_assignkey(key, cmd_name, cmd_description)
     if (old_cmd != "")
     {
         answer = Ask("Ctrl+Alt+@key@ has been assigned to @old_cmd@, replace it?(Input \"yes\" to replace, otherwise not replace)")
-        if (!(tolower(answer) == "yes"))
+        answer = tolower(answer)
+        if (answer == "yes")
         {
+            // 把当前冲突的老的快捷键替换为新的
+        }
+        else if (answer == "all")
+        {
+            // 保存状态为把老的快捷键替换为新的
+        }
+        else // if (answer == "ignore")
+        {
+            // 跳过这一个快捷键的设置
             msg ("Assign Ctrl+Alt+@key@ to @cmd_name@ fail!")
-            return
+            return        
         }
     }
 
@@ -1874,6 +2005,22 @@ macro gd_strtrim(string)
         string = strmid(string, 0, i + 1)
     }
     return string
+}
+
+// 把第一个匹配到的src替换为dst
+macro gd_strreplace(string, src, dst)
+{
+    result = ""
+    pos = gd_strfind(string, src)
+    if (pos < 0)
+    {
+        return string
+    }
+    result = cat(result, strmid(string, 0, pos))
+    result = cat(result, dst)
+    result = cat(result, strmid(string, pos + strlen(src), strlen(string)))
+
+    return result
 }
 
 macro gd_IsWhiteChar(ch)
