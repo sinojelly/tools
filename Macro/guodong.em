@@ -70,7 +70,7 @@ macro GD_setup()
 
     GD_setupkey()
 
-    GD_help()
+    //GD_help()
 
     //stop
 }
@@ -101,43 +101,42 @@ macro GD_setupkey()
 {
     // 老版本的不支持全局变量,如何显示帮助?
     
-    g_gd_help = "" 
-
-    // 设置功能组合基础键
-    // 设为Alt, 用起来比较方便
-    global g_gd_
+    //g_gd_help = "" 
+    hhelp = NewBuf("Guodong Command List")
 
     // Ctrl+Alt+H   添加/修改函数头、类头。
-    gd_assignkey("h", "GD_AddHeader", "Add/modify class/function/etc. header.")
+    gd_assignkey(hhelp, "h", "GD_AddHeader", "Add/modify class/function/etc. header.")
 
     // Ctrl+Alt+F  添加/修改文件头
-    gd_assignkey("f", "GD_AddFileHeader", "Add/modify file header.")
+    gd_assignkey(hhelp, "f", "GD_AddFileHeader", "Add/modify file header.")
 
     // Ctrl+Alt+O  cpp/h文件切换.
-    gd_assignkey("o", "GD_SHSwitch", "Source/Header switch.")
+    gd_assignkey(hhelp, "o", "GD_SHSwitch", "Source/Header switch.")
 
     // Ctrl+Alt+A  自动添加所有工程目录中的文件
-    gd_assignkey("a", "GD_AddFiles", "Add all files in project dir.")
+    gd_assignkey(hhelp, "a", "GD_AddFiles", "Add all files in project dir.")
 
     // Ctrl+Alt+E 打开当前文件所在目录    
-    gd_assignkey("e", "GD_OpenExplorer", "Open current file dir.")
+    gd_assignkey(hhelp, "e", "GD_OpenExplorer", "Open current file dir.")
 
     // Ctrl+Alt+C 归档当前文件   
-    gd_assignkey("c", "GD_TortoiseSVNCommit", "Commit current file to SVN server.")
+    gd_assignkey(hhelp, "c", "GD_TortoiseSVNCommit", "Commit current file to SVN server.")
 
     // Ctrl+Alt+S 统计当前文件代码行(如果选中代码则是选中代码行)
+    gd_assignkey(hhelp, "s", "GD_CodeLine", "Count the code line of current file or selected code.")
 
     // Ctrl+Alt+M Measure 统计当前文件圈复杂度(如果选中代码则是选中代码圈复杂度)
-    gd_assignkey("m", "GD_SourceMonitor", "Run SourceMonitor check current file or selected code.")
+    gd_assignkey(hhelp, "m", "GD_SourceMonitor", "Run SourceMonitor check current file or selected code.")
 
     // Ctrl+Alt+F1  显示帮助信息, 包括doxys帮助
 
     // Ctrl+Alt+B    注释/反注释选中的代码行
-    gd_assignkey("b", "GD_Comment", "Comment/Uncomment the selected content.")
+    gd_assignkey(hhelp, "b", "GD_Comment", "Comment/Uncomment the selected content.")
     //stop
 
-    // Ctrl+Alt+L    Lint当前文件.
-    gd_assignkey("l", "GD_Lint", "Lint current file.")
+    // Ctrl+Alt+L    Lint当前文件. 这个还是增加custom lint比较好。
+    // 在%j/Lint目录下执行命令: D:\Tools\CMD\Lint\SmartLint\PC-Lint8.0\lint-nt  *_opt.lnt *_file.lnt
+    //gd_assignkey(hhelp, "l", "GD_Lint", "Lint current file.")
 
     // Ctrl+Alt+R   执行指定的批处理/可执行文件.(可以用来编译/Lint整个工程/运行文件)
     // 指定可执行文件、运行目录、参数
@@ -145,9 +144,38 @@ macro GD_setupkey()
     // 在自己的应用程序中写一个批处理,然后再在macro中调用.
     // 研究一下Ask的机制.
     // 另外，通过抓窗口能实现自动加入命令
-    // gd_assignkey("r", "GD_RunCmd", "Run the specified command.")
+    // gd_assignkey(hhelp, "r", "GD_RunCmd", "Run the specified command.")
 
     // 自己常用的快捷键由于Fn的关系，使用不方便,把这些快捷键重新定义
+
+    SetCurrentBuf(hhelp)
+    SaveBufAs(hhelp, "GdCommandList.txt")
+    //SetBufDirty(hhelp) // Save之后不能设置了,否则会有异常
+}
+
+macro GD_CodeLine()
+{
+    hwnd = GetCurrentWnd()
+    lnFirst = GetWndSelLnFirst(hwnd)
+    lnLast = GetWndSelLnLast(hwnd)
+    hbuf = GetCurrentBuf()
+
+    rc = gd_ParseCodeInit()
+    if(lnLast == lnFirst) // 不是选中多行, 则统计当前文件
+    { 
+        lnFirst = 0
+        lnLast = GetBufLineCount(hbuf)        
+    }
+
+    ln = lnFirst
+    while (ln < lnLast)
+    {
+        szLine = GetBufLine(hbuf, ln)
+        rc = gd_ParseCodeLine(szLine, rc, False)
+        ln = ln + 1
+    }
+
+    msg rc
 }
 
 /*****************************************************************************
@@ -161,6 +189,7 @@ macro GD_setupkey()
  *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
  *---------------------------------------------------------------------------- 
  */
+ /*
 macro GD_help()
 {
     hbuf = NewBuf("Guodong Command List") // create output buffer
@@ -180,17 +209,8 @@ macro GD_help()
     SetCurrentBuf(hbuf) // put search results in a window
     SetBufDirty(hbuf, FALSE); // don't bother asking to save
 
-}
+}*/
 
-// proj目录下有Lint\lint.bat，带有一个参数"待lint的文件"
-macro GD_Lint()
-{
-    projDir = GetProjDir(GetCurrentProj())
-    hbuf = GetCurrentBuf()    
-    szCurPathName = GetBufName(hbuf)
-    ShellExecute ("open", "\"@projDir@\\Lint\\lint.bat\"", "\"@szCurPathName@\"", "", 1)
-
-}
 
 // 取string的最前面n个字符
 macro gd_strleft(string, n)
@@ -513,6 +533,12 @@ macro GD_SHSwitch()
         }
     }
 
+    if (hPairFile == hNil)
+    {
+        Beep()
+        return
+    }
+
     SetCurrentBuf (hPairFile) // 显示文件
 }
 
@@ -555,12 +581,12 @@ macro gd_ParamAlign(param)
  */
 macro GD_AddHeader()
 {
-    global horizon
+    //global horizon
 
-    if (horizon == "")
-    {
+    //if (horizon == "")
+    //{
         horizon = " \\internal --------------------------------------------------------------------"
-    }
+    //}
     
     szMyName = gd_UserName()
     
@@ -581,9 +607,11 @@ macro GD_AddHeader()
     
     szAlign = ""
     nTmp = headws.spaceCnt
-    while (nTmp--)
+    //while (nTmp--)
+    while (nTmp)
     {
         szAlign = cat(szAlign, " ")
+        nTmp = nTmp - 1
     }
 
     if (gd_ModifyHeader(hbuf, ln, szAlign)) // 已经有头只是修改它
@@ -639,22 +667,30 @@ macro GD_AddHeader()
         }        
     }
     
-    InsBufLine(hbuf, ln ++, szAlign # "/**")
-    InsBufLine(hbuf, ln ++, szAlign # " @brief@.")    
-    InsBufLine(hbuf, ln ++, szAlign # " \\internal ********************************************************************")
-    InsBufLine(hbuf, ln ++, szAlign # " 其它说明(请先空一行) :")
-    InsBufLine(hbuf, ln ++, szAlign # " ")
-    InsBufLine(hbuf, ln ++, szAlign # " ")
+    InsBufLine(hbuf, ln , szAlign # "/**")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " @brief@.")    
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " \\internal ********************************************************************")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " 其它说明(请先空一行) :")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " ")
+    ln = ln + 1
     // 有模板参数
     if (hTmpParams != hNil)
     {
-        InsBufLine(hbuf, ln ++, szAlign # " \\internal 模板参数:")
+        InsBufLine(hbuf, ln , szAlign # " \\internal 模板参数:")
+        ln = ln + 1
         i = 0
         count = GetBufLineCount(hTmpParams)
         while (i < count)
         {
             rec = GetBufLine(hTmpParams, i)
-            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.name # gd_ParamAlign(rec.name) # " ")
+            InsBufLine(hbuf, ln , szAlign # " \\param  " # rec.name # gd_ParamAlign(rec.name) # " ")
+            ln = ln + 1
             i = i + 1
         }
         CloseBuf(hTmpParams)
@@ -663,7 +699,8 @@ macro GD_AddHeader()
     //有函数参数
     if (hFuncParams != hNil)
     {
-        InsBufLine(hbuf, ln ++, szAlign # " \\internal 函数参数:")
+        InsBufLine(hbuf, ln , szAlign # " \\internal 函数参数:")
+        ln = ln + 1
         i = 0
         count = GetBufLineCount(hFuncParams)
         while (i < count)
@@ -673,7 +710,8 @@ macro GD_AddHeader()
             {
                 break
             }
-            InsBufLine(hbuf, ln ++, szAlign # " \\param  " # rec.name # gd_ParamAlign(rec.name) #  " [" # gd_ParamTypeDescription(rec.type) # "]")
+            InsBufLine(hbuf, ln , szAlign # " \\param  " # rec.name # gd_ParamAlign(rec.name) #  " [" # gd_ParamTypeDescription(rec.type) # "]")
+            ln = ln + 1
             i = i + 1
         }
         CloseBuf(hFuncParams)
@@ -685,24 +723,35 @@ macro GD_AddHeader()
         {
             ret_des = "TRUE - 成功; FALSE - 失败."
         }
-        InsBufLine(hbuf, ln ++, szAlign # " \\return  " # gd_ParamAlign("") # "@ret_des@")
+        InsBufLine(hbuf, ln , szAlign # " \\return  " # gd_ParamAlign("") # "@ret_des@")
+        ln = ln + 1
     }
-    InsBufLine(hbuf, ln ++, szAlign # " ")
-    InsBufLine(hbuf, ln ++, szAlign # " \\internal 历史记录:")
-    InsBufLine(hbuf, ln ++, szAlign # horizon)    
-    InsBufLine(hbuf, ln ++, szAlign # " \\version 1.0")
-    InsBufLine(hbuf, ln ++, szAlign # " \\author @szMyName@")
-    InsBufLine(hbuf, ln ++, szAlign # " \\assessor ")
-    InsBufLine(hbuf, ln ++, szAlign # " @date@")
-    InsBufLine(hbuf, ln ++, szAlign # " \\note V1.0说明: 创建" # loc.Type # ".")
-    InsBufLine(hbuf, ln ++, szAlign # horizon) 
-    InsBufLine(hbuf, ln ++, szAlign # "*/")
+    InsBufLine(hbuf, ln , szAlign # " ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " \\internal 历史记录:")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # horizon)   
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " \\version 1.0")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " \\author @szMyName@")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " \\assessor ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " @date@")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " \\note V1.0说明: 创建" # loc.Type # ".")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # horizon) 
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # "*/")
     
     SetBufIns(hbuf, loc.lnFirst + 5, 1) // 光标停在其它说明的起始位置
 }
 
 macro gd_ModifyHeader(hbuf, ln, szAlign)
 {
+    horizon = " \\internal --------------------------------------------------------------------"
     if (ln < /*2*/ 5 ) // 前面不足两行, 实际的注释远远不止两行
     {
         return False
@@ -735,12 +784,17 @@ macro gd_ModifyHeader(hbuf, ln, szAlign)
 
     // 函数声明前面是horizon和* /结尾的函数头，需要增加历史记录
     ln = ln - 1
-    InsBufLine(hbuf, ln ++, szAlign # " \\version @thisVersion@")
-    InsBufLine(hbuf, ln ++, szAlign # " \\author " # gd_UserName())
-    InsBufLine(hbuf, ln ++, szAlign # " \\assessor ")
-    InsBufLine(hbuf, ln ++, szAlign # " " # gd_DateTime())
-    InsBufLine(hbuf, ln ++, szAlign # " \\note V@thisVersion@说明: " # description # ".")
-    InsBufLine(hbuf, ln ++, szAlign # horizon) 
+    InsBufLine(hbuf, ln , szAlign # " \\version @thisVersion@")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " \\author " # gd_UserName())
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " \\assessor ")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " " # gd_DateTime())
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # " \\note V@thisVersion@说明: " # description # ".")
+    ln = ln + 1
+    InsBufLine(hbuf, ln , szAlign # horizon) 
 
     return True
 }
@@ -1069,7 +1123,7 @@ macro gd_ParseCodeInit()
  */
 macro gd_ParseCodeLine(szLine, rc, needPureCode)
 {
-    global m_nStatMethod
+    //global m_nStatMethod
     m_nStatMethod = 1    
     
 	bStatedComment = FALSE;//本行作为注释行是否已统计过
@@ -1451,29 +1505,67 @@ macro gd_Copyright()
  *  返 回 值       : 无
  *  其它说明   : 如果该快捷键已分配,弹出提示,输入"yes"表示覆盖.
  *****************************************************************************/
-macro gd_assignkey(key, cmd_name, cmd_description)
+macro gd_assignkey(hhelp, key, cmd_name, cmd_description)
 {
     //KeyFromChar(char, fCtrl, fShift, fAlt)
-    
-    key_code = KeyFromChar(key, 1, 0, 1)
-    old_cmd = CmdFromKey(key_code)
-    if (old_cmd != "")
+
+    // 获取批处理设置的功能组合基础键
+    // 设为Alt, 用起来比较方便
+    gd_ctrl = GetEnv("HOT_KEY_CTRL")
+    gd_alt  = GetEnv("HOT_KEY_ALT")
+    gd_shift = GetEnv("HOT_KEY_SHIFT")
+
+    if ((gd_ctrl == "") && (gd_alt == "") && (gd_shift == "")) // 未设置
     {
-        answer = Ask("Ctrl+Alt+@key@ has been assigned to @old_cmd@, replace it?(Input \"yes\" to replace, otherwise not replace)")
-        answer = tolower(answer)
-        if (answer == "yes")
+        gd_ctrl = 1;
+        gd_alt = 1
+        gd_shift = 0
+    }
+    szHotKey = ""
+    if (gd_ctrl == 1)
+    {
+        if (szHotKey == "") szHotKey = "Ctrl"
+        else szHotKey = cat(szHotKey, "+Ctrl")
+    }
+    if (gd_alt == 1)
+    {
+        if (szHotKey == "") szHotKey = "Alt"
+        else szHotKey = cat(szHotKey, "+Alt")
+    }
+    if (gd_shift == 1)
+    {
+        if (szHotKey == "") szHotKey = "Shift"
+        else szHotKey = cat(szHotKey, "+Shift")
+    }
+    if (szHotKey == "")
+    {
+        msg "Hot key must use Ctrl/Shift/Alt."
+        return
+    }
+
+    key_code = KeyFromChar(key, gd_ctrl, gd_shift, gd_alt)
+    if (GetEnv("ALL_REPLACE") != "1") // 不是全部替换
+    {        
+        old_cmd = CmdFromKey(key_code)
+        if (old_cmd != "")
         {
-            // 把当前冲突的老的快捷键替换为新的
-        }
-        else if (answer == "all")
-        {
-            // 保存状态为把老的快捷键替换为新的
-        }
-        else // if (answer == "ignore")
-        {
-            // 跳过这一个快捷键的设置
-            msg ("Assign Ctrl+Alt+@key@ to @cmd_name@ fail!")
-            return        
+            answer = Ask("@szHotKey@+@key@ has been assigned to @old_cmd@, replace it?(Input \"yes\" or \"all\" to replace or replace all, otherwise not replace)")
+            answer = tolower(answer)
+            if (answer == "yes")
+            {
+                // 把当前冲突的老的快捷键替换为新的
+            }
+            else if (answer == "all")
+            {
+                // 保存状态为把老的快捷键替换为新的
+                PutEnv("ALL_REPLACE", "1")
+            }
+            else // if (answer == "ignore")
+            {
+                // 跳过这一个快捷键的设置
+                msg ("Assign @szHotKey@+@key@ to @cmd_name@ fail!")
+                return        
+            }
         }
     }
 
@@ -1481,10 +1573,11 @@ macro gd_assignkey(key, cmd_name, cmd_description)
     AssignKeyToCmd(key_code, cmd_name)
 
     // 在 全局变量中保存帮助信息
-    global g_gd_help
+    //global g_gd_help
 
-    newline = gd_newline()
-    g_gd_help = cat(g_gd_help, "Ctrl+Alt+@key@                 :    @cmd_name@  @cmd_description@ @newline@")
+    //newline = gd_newline()
+    //g_gd_help = cat(g_gd_help, "@szHotKey@+@key@                 :    @cmd_name@  @cmd_description@ @newline@")
+    AppendBufLine(hhelp, "@szHotKey@+@key@                 :    @cmd_name@  @cmd_description@")
 }
 
 macro gd_newline()
