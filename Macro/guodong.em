@@ -77,7 +77,19 @@ macro GD_setup()
 
 macro GD_ModifyBase()
 {
-   hprj = OpenProj(GetEnv("SI_BASE_PRJ")); // 打开Base工程, SI_BASE_PRJ -- Base工程路径
+   basePath = GetEnv("SI_BASE_PRJ")
+   hprj = OpenProj(basePath); // 打开Base工程, SI_BASE_PRJ -- Base工程路径
+   if ("" == basePath)
+   {
+       msg "No environment variable SI_BASE_PRJ defined."
+       return
+   }
+   if (hNil == hprj)
+   {
+       msg "Open base project @basePath@ fail."
+       return
+   }   
+   
    //msg GetEnv("SI_BASE_PRJ")
    //AddFileToProj(hprj, GetEnv("SI_EM_FILE")); //似乎不好用, 不能找到em中的函数 // SI_EM_FILE -- Source Insight 宏文件
    //msg GetEnv("SI_EM_FILE")
@@ -305,6 +317,12 @@ macro GD_SourceMonitor()
 
     exePath = GetEnv("SRCMONITOR_PATH")
 
+    if ("" == exePath)
+    {
+        msg "No environment variable SRCMONITOR_PATH defined."
+        return
+    }
+
     hwnd = GetCurrentWnd()
     lnFirst = GetWndSelLnFirst(hwnd)
     lnLast = GetWndSelLnLast(hwnd)
@@ -370,6 +388,12 @@ macro GD_TortoiseSVNCommit()
     exePath = GetEnv("TortoiseSVN_PATH")
 
     //msg exePath
+
+    if ("" == exePath)
+    {
+        msg "No environment variable TortoiseSVN_PATH defined."
+        return
+    }
 
     hbuf = GetCurrentBuf()    
     szCurPathName = GetBufName(hbuf)
@@ -1482,7 +1506,15 @@ macro gd_nextline(string, nStart)
  *****************************************************************************/
 macro gd_UserName()
 {
-    return GetEnv("SI_USER")
+    userName = GetEnv("SI_USER")
+
+    if ("" == userName)
+    {
+        msg "No environment variable SI_USER defined."
+        return "default"
+    }
+
+    return userName;
 }
 
 /*****************************************************************************
@@ -1494,7 +1526,15 @@ macro gd_UserName()
  *****************************************************************************/
 macro gd_Copyright()
 {
-    return GetEnv("SI_COPYRIGHT")
+    copyRight = GetEnv("SI_COPYRIGHT")
+
+    if ("" == copyRight)
+    {
+        msg "No environment variable SI_COPYRIGHT defined."
+        return "No Copyright reserved."
+    }
+
+    return copyRight;
 }
 
 /*****************************************************************************
