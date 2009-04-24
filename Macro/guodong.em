@@ -104,6 +104,8 @@ macro GD_ModifyBase()
  *  输入参数   : 无
  *  返 回 值       : 无
  *  其它说明   : 如果该快捷键已分配,弹出提示,输入"yes"表示覆盖.
+
+     注意: Ctrl + Alt 默认改为Alt
  *----------------------------------------------------------------------------  
  * 历史记录(变更单, 责任人@修改日期, 操作说明)  
  *  $0000000(N/A),  chengodong @2009-3-15 19:23,  创建函数  
@@ -133,6 +135,14 @@ macro GD_setupkey()
 
     // Ctrl+Alt+C 归档当前文件   
     gd_assignkey(hhelp, "c", "GD_TortoiseSVNCommit", "Commit current file to SVN server.")
+
+    // Ctrl+Alt+U 更新整个目录   
+    gd_assignkey(hhelp, "u", "GD_TortoiseSVNUpdate", "Update current dir from SVN server.")
+
+    // Ctrl+Alt+G 显示当前文件的修改日志   
+    gd_assignkey(hhelp, "g", "GD_TortoiseSVNLog", "Show log of current file from SVN server.")
+
+    stop
 
     // Ctrl+Alt+S 统计当前文件代码行(如果选中代码则是选中代码行)
     gd_assignkey(hhelp, "s", "GD_CodeLine", "Count the code line of current file or selected code.")
@@ -399,6 +409,55 @@ macro GD_TortoiseSVNCommit()
     szCurPathName = GetBufName(hbuf)
     //ShellExecute ("open", szCurPathName, "\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", 1)
     ShellExecute ("open", "\"@exePath@\"", "/command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", 1)
+    //RunCmd("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend")
+    //RunCmdLine ("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", TRUE)
+    
+    //stop
+}
+
+macro GD_TortoiseSVNLog()
+{
+    //"C:\Program Files\TortoiseSVN\bin\TortoiseProc.exe" /command:log /path:%f /notempfile /closeonend
+
+    exePath = GetEnv("TortoiseSVN_PATH")
+
+    //msg exePath
+
+    if ("" == exePath)
+    {
+        msg "No environment variable TortoiseSVN_PATH defined."
+        return
+    }
+
+    hbuf = GetCurrentBuf()    
+    szCurPathName = GetBufName(hbuf)
+    //ShellExecute ("open", szCurPathName, "\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", 1)
+    ShellExecute ("open", "\"@exePath@\"", "/command:log /path:\"@szCurPathName@\" /notempfile /closeonend", "", 1)
+    //RunCmd("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend")
+    //RunCmdLine ("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", TRUE)
+    
+    //stop
+}
+
+macro GD_TortoiseSVNUpdate()
+{
+    //更新整个目录（update all）
+    //"C:\Program Files\TortoiseSVN\bin\TortoiseProc.exe" /command:update /path:*.* /notempfile /closeonend
+
+    exePath = GetEnv("TortoiseSVN_PATH")
+
+    //msg exePath
+
+    if ("" == exePath)
+    {
+        msg "No environment variable TortoiseSVN_PATH defined."
+        return
+    }
+
+    hbuf = GetCurrentBuf()    
+    szCurPathName = GetBufName(hbuf)
+    //ShellExecute ("open", szCurPathName, "\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", 1)
+    ShellExecute ("open", "\"@exePath@\"", "/command:update /path:*.* /notempfile /closeonend", "", 1)
     //RunCmd("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend")
     //RunCmdLine ("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", TRUE)
     
@@ -750,8 +809,8 @@ macro GD_AddHeader()
         InsBufLine(hbuf, ln , szAlign # " \\return  " # gd_ParamAlign("") # "@ret_des@")
         ln = ln + 1
     }
-    InsBufLine(hbuf, ln , szAlign # " ")
-    ln = ln + 1
+    //InsBufLine(hbuf, ln , szAlign # " ")
+    //ln = ln + 1
     InsBufLine(hbuf, ln , szAlign # " \\internal 历史记录:")
     ln = ln + 1
     InsBufLine(hbuf, ln , szAlign # horizon)   
