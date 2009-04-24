@@ -1599,7 +1599,7 @@ macro gd_Copyright()
 /*****************************************************************************
  *  函数名称   : gd_assignkey
  *  功能描述   : 分配快捷键给指定命令/宏.
- *  输入参数   : key                -   单字节字符串, 与Ctrl,Alt一起构成快捷键.
+ *  输入参数   : key                -   单字节字符串, 默认与Alt一起构成快捷键.
                               : cmd_name     -   命令名称或者宏的名字
  *  返 回 值       : 无
  *  其它说明   : 如果该快捷键已分配,弹出提示,输入"yes"表示覆盖.
@@ -1616,7 +1616,7 @@ macro gd_assignkey(hhelp, key, cmd_name, cmd_description)
 
     if ((gd_ctrl == "") && (gd_alt == "") && (gd_shift == "")) // 未设置
     {
-        gd_ctrl = 1;
+        gd_ctrl = 0;
         gd_alt = 1
         gd_shift = 0
     }
