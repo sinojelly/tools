@@ -136,13 +136,11 @@ macro GD_setupkey()
     // Ctrl+Alt+C 归档当前文件   
     gd_assignkey(hhelp, "c", "GD_TortoiseSVNCommit", "Commit current file to SVN server.")
 
-    // Ctrl+Alt+U 更新整个目录   
+    // Ctrl+Alt+U 更新整个目录       
     gd_assignkey(hhelp, "u", "GD_TortoiseSVNUpdate", "Update current dir from SVN server.")
 
-    // Ctrl+Alt+G 显示当前文件的修改日志   
-    gd_assignkey(hhelp, "g", "GD_TortoiseSVNLog", "Show log of current file from SVN server.")
-
-    stop
+    // Ctrl+Alt+L 显示当前文件的修改日志   
+    gd_assignkey(hhelp, "l", "GD_TortoiseSVNLog", "Show log of current file from SVN server.")
 
     // Ctrl+Alt+S 统计当前文件代码行(如果选中代码则是选中代码行)
     gd_assignkey(hhelp, "s", "GD_CodeLine", "Count the code line of current file or selected code.")
@@ -156,7 +154,7 @@ macro GD_setupkey()
     gd_assignkey(hhelp, "b", "GD_Comment", "Comment/Uncomment the selected content.")
     //stop
 
-    // Ctrl+Alt+L    Lint当前文件. 这个还是增加custom lint比较好。
+    // Ctrl+Alt+L int   Lint当前文件. 这个还是增加custom lint比较好。
     // 在%j/Lint目录下执行命令: D:\Tools\CMD\Lint\SmartLint\PC-Lint8.0\lint-nt  *_opt.lnt *_file.lnt
     //gd_assignkey(hhelp, "l", "GD_Lint", "Lint current file.")
 
