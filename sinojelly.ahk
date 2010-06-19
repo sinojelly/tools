@@ -25,14 +25,9 @@
 ; return
 
 #include WinManip.ahk
-#include ini.ahk
 
 ; 设置窗口查找时指定的关键字可以是窗口标题的任意位置
 SetTitleMatchMode 2
-
-ini_Load(config,"sinojelly.ini")
-RecentOpen := ini_Read(config, "最近打开的项目", "最近打开的项目")
-MsgBox, %RecentOpen%
 
 ; 笔记本电脑Fn按下，才能使用End和Home，很不方便，把它和PgUp/PgDn交换过来。
 PgDn::Send {End}
@@ -52,9 +47,8 @@ Home::Send {PgUp}
 ^End::Send ^{PgDn}
 ^Home::Send ^{PgUp}
 
-
 ; CMD: Alt+R 最近打开的项目(文件/文件夹) (R-Recent)
-!R::Run %RecentOpen%
+!R::Run "C:\Users\jelly\AppData\Roaming\Microsoft\Windows\Recent\"
 
 ; CMD: Win+PrtSc 打开抓图软件
 #PrintScreen::RunOrActive("HyperSnap", "D:\Program Files\HyperSnap 6\HprSnap6.exe")
