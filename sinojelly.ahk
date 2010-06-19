@@ -24,6 +24,8 @@
 ; 	Run Notepad
 ; return
 
+#include WinManip.ahk
+
 ; 设置窗口查找时指定的关键字可以是窗口标题的任意位置
 SetTitleMatchMode 2
 
@@ -46,158 +48,65 @@ Home::Send {PgUp}
 ^Home::Send ^{PgUp}
 
 ; CMD: Alt+R 最近打开的项目(文件/文件夹) (R-Recent)
-!r::Run "C:\Users\jelly\AppData\Roaming\Microsoft\Windows\Recent\"
+!R::Run "C:\Users\jelly\AppData\Roaming\Microsoft\Windows\Recent\"
 
-; CMD: Ctrl+PrtSc 打开抓图软件
-^PrintScreen::
-IfWinExist HyperSnap
-{
-	WinActivate
-}
-else
-{
-	Run "D:\Program Files\HyperSnap 6\HprSnap6.exe"
-}
-return
+; CMD: Win+PrtSc 打开抓图软件
+#PrintScreen::RunOrActive("HyperSnap", "D:\Program Files\HyperSnap 6\HprSnap6.exe")
 
-; CMD: Ctrl+P 启动Proxy (P-Proxy)
-^p::
-IfWinExist ssh_start.bat
-	WinActivate
-else
-	Run "D:\Tools\CMD\ssh\ssh_start.bat"
-return
+; CMD: Win+P 启动Proxy (P-Proxy)
+; 用RunOrActive则多次运行后无法启动bat了。
+#P::Run "D:\Tools\CMD\ssh\ssh_start.bat"
 
-; CMD: Ctrl+Alt+D 启动下载工具 (D-Download)
-^!d::
-IfWinExist 迅雷
-	WinActivate
-else
-	Run "C:\Program Files\Thunder Network\Thunder\Program\Thunder.exe"
-return
+; CMD: Ctrl+Win+D 启动下载工具 (D-Download)
+^#D::RunOrActive("迅雷", "C:\Program Files\Thunder Network\Thunder\Program\Thunder.exe")
 
 ; CMD: Ctrl+D 打开下载目录 (D-Download)
-^d::Run "D:\Users\Downloads"
+^D::Run "D:\Users\Downloads"
 
 ; CMD: Win+A 打开文件搜索工具 (在Everything已运行的情况下)
 ; 如果任务栏窗口不见了，则可能找不到，但启动后不会更新数据库，还是很快，只是需要确认访问硬盘
-; CMD: Ctrl+Shift+A 启动文件搜索工具 (启动Everything)
-^+A::Run "D:\Tools\CMD\Everything-1.2.1.371\Everything-1.2.1.371.exe"
+; CMD: Ctrl+Win+A 启动文件搜索工具 (启动Everything)
+^#A::Run "D:\Tools\CMD\Everything-1.2.1.371\Everything-1.2.1.371.exe"
 
 ; CMD: Win+W 运行词典 (W-Word)
-#W::
-IfWinExist 有道词典
-	WinActivate
-else
-	Run "C:\Program Files\Youdao\Dict\YodaoDict.exe"
-return
+#W::RunOrActive("有道词典", "C:\Program Files\Youdao\Dict\YodaoDict.exe")
 
 ; Win+M 最小化所有窗口(与Win+D的区别是便签不会最小化。因此把Win+D映射为Win+M)
 ; 这种方式必要性不大，而且可能使得Win+D无效。
 ;#D::Send #M
 
 ; CMD: Win+N 打开文本编辑器 (N-Notepad++)
-#N::
-IfWinExist Notepad++
-	WinActivate
-else
-	Run "C:\Program Files\Notepad++\notepad++.exe"
-return
+#N::RunOrActive("Notepad++", "C:\Program Files\Notepad++\notepad++.exe")
 
 ; CMD: Win+H 打开火狐浏览器 (H-Huohu)
-#H::
-IfWinExist Mozilla Firefox
-    WinActivate
-else
-	Run "D:\Program Files\FirefoxPortable\FirefoxPortable.exe"
-return
+#H::RunOrActive("Mozilla Firefox", "D:\Program Files\FirefoxPortable\FirefoxPortable.exe")
 	
 ; CMD: Win+C 打开Chrome浏览器 (C-Chrome)
-#C::
-IfWinExist Chromium
-    WinActivate
-else
-	Run "D:\Program Files\chrome-win32\chrome.exe"
-return
+#C::RunOrActive("Chromium", "D:\Program Files\chrome-win32\chrome.exe")
 
 ; CMD: Win+V 打开Visual Studio (V-VisualStudio)
-#V::
-IfWinExist Microsoft Visual Studio
-    WinActivate
-else 
-	Run "C:\Program Files\Microsoft Visual Studio 9.0\Common7\IDE\devenv.exe"
-return
+#V::RunOrActive("Microsoft Visual Studio", "C:\Program Files\Microsoft Visual Studio 9.0\Common7\IDE\devenv.exe")
 
 ; CMD: Win+I 打开Source Insight (I-Insight)
-#I::
-IfWinExist Source Insight
-    WinActivate
-else 
-	Run "D:\Program Files\SourceInsight3.50.064\Insight3.exe"
-return
+#I::RunOrActive("Source Insight", "D:\Program Files\SourceInsight3.50.064\Insight3.exe")
 	
 ; CMD: Win+J 打开Eclipse (J-Java)
 ; Win+L是lock windows
-#J::
-IfWinExist Eclipse
-    WinActivate
-else 
-	Run "D:\Program Files\eclipse-SDK-3.4.2-win32\eclipse\eclipse.exe"
-return
+#J::RunOrActive("Eclipse", "D:\Program Files\eclipse-SDK-3.4.2-win32\eclipse\eclipse.exe")
 
 ; CMD: Win+B 打开PDF阅读器(B-book)
-#B::
-IfWinExist Foxit Reader
-    WinActivate
-else 
-	Run "D:\Program Files\Foxit Reader.exe"
-return
+#B::RunOrActive("Foxit Reader", "D:\Program Files\Foxit Reader.exe")
 
 ; CMD: Win+K 打开WizKnowledge(K-Knowledge)
-#K::
-IfWinExist WizExplorer
-    WinActivate
-else 
-	Run "C:\Program Files\WizBrother\Wiz\WizExplorer.exe"
-return
+#K::RunOrActive("WizExplorer", "C:\Program Files\WizBrother\Wiz\WizExplorer.exe")
 
 ; CMD: Win+Q 打开QQ(Q-QQ)
 ; 窗口可能查询不到，第一次用此方法登陆QQ即可
-#Q::
-IfWinExist QQ
-    WinActivate
-else 
-	Run "D:\Program Files\QQ2009\Bin\QQ.exe"
-return
-
-RunOrActive(WinTitle, ExePath)
-{
-	IfWinExist %WinTitle%
-	{
-		WinActivate
-	}
-	else 
-	{
-		Run %ExePath%
-		WinWait %WinTitle%
-		WinActivate
-	}
-	return
-}
+#Q::RunOrActive("QQ", "D:\Program Files\QQ2009\Bin\QQ.exe")
 
 ; CMD: Win+X 打开正则表达式测试工具 (X-RegExp)
 #X::RunOrActive("RegEx TestBed", "D:\Tools\CMD\RegExp\RegEx TestBed.exe")
 
-/* IfWinExist RegEx TestBed
-    WinActivate
-else 
-{
-	Run "D:\Tools\CMD\RegExp\RegEx TestBed.exe"
-	WinWait RegEx TestBed
-	WinActivate
-}
-return
- */
 
 ; Note: From now on whenever you run AutoHotkey directly, this script
 ; will be loaded.  So feel free to customize it to suit your needs.
