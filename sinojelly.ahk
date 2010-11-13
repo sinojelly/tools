@@ -77,15 +77,20 @@ return
 
 
 ;=============================================================
-; ======= 交流软件(T - Talk) ========
+; ======= 交流软件(Comunication) ========
 ; CMD: Win+Q 打开QQ
 ; 窗口可能查询不到，第一次用此方法登陆QQ即可
 ;#Q::RunOrActive(qq_name, qq_path)
 #Q::Run %qq_path%
 
-; CMD: Win+T 打开网易闪电邮
-#T::RunOrActive(ctrl_win_talk_name, ctrl_win_talk_path)
+; depracate: Win+T 打开网易闪电邮
+;#T::RunOrActive(ctrl_win_talk_name, ctrl_win_talk_path)
 
+;=============================================================
+; ======= 任务管理(T - Task) ========
+; CMD: Win+T 打开Google Task任务管理
+;#T::Run C:\Users\jelly\AppData\Local\Google\Chrome\Application\chrome.exe --app="https://mail.google.com/tasks/ig?pli=1"
+#T::RunOrActive(gtask_name, gtask_path)
 
 ;=============================================================
 ; ======= 浏览器(I - Internet) ========
@@ -105,8 +110,8 @@ return
 ; CMD: Ctrl+Win+D 启动下载工具 (D-Download)
 ^#D::RunOrActive(ctrl_win_download_name, ctrl_win_download_path)
 
-; CMD: Ctrl+D 打开下载目录 (D-Download)
-^D::Run %download_dir%
+; CMD: Ctrl+Alt+D 打开下载目录 (D-Download)
+^!D::Run %download_dir%
 
 
 ;=============================================================

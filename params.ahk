@@ -31,14 +31,16 @@ regexp_tool_name = RegEx TestBed
 regexp_tool_path = "D:\Tools\CMD\RegExp\RegEx TestBed.exe"
 
 
-; ======= 交流软件(T - Talk) ========
+; ======= 交流软件(Q - QQ) ========
 qq_name = QQ
 qq_path = "D:\Program Files\QQ2009\Bin\QQ.exe"
 
-ctrl_win_talk_name = 网易闪电邮
-ctrl_win_talk_path = "C:\Program Files\Netease\网易闪电邮\Start.exe"
+;ctrl_win_talk_name = 网易闪电邮
+;ctrl_win_talk_path = "C:\Program Files\Netease\网易闪电邮\Start.exe"
 
-
+; ======= 任务管理(T - Task) ========
+gtask_name = Google 工作表
+gtask_path = C:\Users\jelly\AppData\Local\Google\Chrome\Application\chrome.exe --app="https://mail.google.com/tasks/ig?pli=1"
 
 ; ======= 浏览器(I - Internet) ========
 ; Win+I  Chrome,  Ctrl+Win+I  ssh, Shift+Win+I FireFox
