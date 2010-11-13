@@ -92,6 +92,9 @@ return
 ;#T::Run C:\Users\jelly\AppData\Local\Google\Chrome\Application\chrome.exe --app="https://mail.google.com/tasks/ig?pli=1"
 #T::RunOrActive(gtask_name, gtask_path)
 
+; CMD: Ctrl+Win+T 打开Google 日历
+^#T::RunOrActive(gcalendar_name, gcalendar_path)
+
 ;=============================================================
 ; ======= 浏览器(I - Internet) ========
 ; CMD: Win+I 打开Chrome浏览器 

@@ -39,8 +39,13 @@ qq_path = "D:\Program Files\QQ2009\Bin\QQ.exe"
 ;ctrl_win_talk_path = "C:\Program Files\Netease\网易闪电邮\Start.exe"
 
 ; ======= 任务管理(T - Task) ========
+; Win + T
 gtask_name = Google 工作表
 gtask_path = C:\Users\jelly\AppData\Local\Google\Chrome\Application\chrome.exe --app="https://mail.google.com/tasks/ig?pli=1"
+
+; Ctrl + Win + T
+gcalendar_name = Google 日历
+gcalendar_path = C:\Users\jelly\AppData\Local\Google\Chrome\Application\chrome.exe --app="https://www.google.com/calendar/render?gsessionid=OK"
 
 ; ======= 浏览器(I - Internet) ========
 ; Win+I  Chrome,  Ctrl+Win+I  ssh, Shift+Win+I FireFox
@@ -67,10 +72,14 @@ ctrl_win_financial_path = "http://www.wacai365.com"
 snap_name = HyperSnap
 snap_path = "D:\Program Files\HyperSnap 6\HprSnap6.exe"
 
-; ======= 语言(L - Language ) ========
+; ======= 单词查询(W - Word ) ========
 ; Win+L 被系统设置为锁定计算机
-dict_name = 有道词典
-dict_path = "C:\Program Files\Youdao\Dict\YodaoDict.exe"
+;dict_name = 有道词典
+;dict_path = "C:\Program Files\Youdao\Dict\YodaoDict.exe"
+
+; Win+W 打开词典查询软件
+dict_name = 在线翻译_在线词典_金山词霸_爱词霸英语
+dict_path = C:\Users\jelly\AppData\Local\Google\Chrome\Application\chrome.exe --app="http://www.iciba.com/"
 
 ; ======= 知识管理(K - Knowledge ) ========
 win_knowledge_name = WizExplorer
