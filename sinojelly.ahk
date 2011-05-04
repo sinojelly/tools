@@ -60,6 +60,13 @@ run %win_editor_path% %ClipBoard%
 return
 ;#IfWinActive
 
+; CMD: Ctrl+Win+U 用UtraEdit打开选中的文件
+^#U::
+ClipBoard =
+Send,^c
+ClipWait   ;等待复制动作的完成
+run %ue_path% %ClipBoard%
+return
 
 ;=============================================================
 ; ======= 编程软件(P - Programming) ========

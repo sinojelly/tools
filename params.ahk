@@ -11,7 +11,7 @@
 ; ======= 文本编辑器(N - Notepad) ========
 ; 最常用的Editor
 win_editor_name = Notepad++
-win_editor_path = "C:\Program Files\Notepad++\notepad++.exe"
+win_editor_path = "D:\Program Files\npp.5.8.6.bin\unicode\notepad++.exe"
 
 ue_path = "D:\Program Files\UltraEdit\Uedit32.exe"
 
@@ -74,12 +74,13 @@ snap_path = "D:\Program Files\HyperSnap 6\HprSnap6.exe"
 
 ; ======= 单词查询(W - Word ) ========
 ; Win+L 被系统设置为锁定计算机
-;dict_name = 有道词典
-;dict_path = "C:\Program Files\Youdao\Dict\YodaoDict.exe"
+; Win+W 打开词典查询软件
+dict_name = 有道词典
+dict_path = "C:\Program Files\Youdao\Dict4\YodaoDict.exe"
 
 ; Win+W 打开词典查询软件
-dict_name = 在线翻译_在线词典_金山词霸_爱词霸英语
-dict_path = C:\Users\jelly\AppData\Local\Google\Chrome\Application\chrome.exe --app="http://www.iciba.com/"
+;dict_name = 在线翻译_在线词典_金山词霸_爱词霸英语
+;dict_path = C:\Users\jelly\AppData\Local\Google\Chrome\Application\chrome.exe --app="http://www.iciba.com/"
 
 ; ======= 知识管理(K - Knowledge ) ========
 win_knowledge_name = WizExplorer
