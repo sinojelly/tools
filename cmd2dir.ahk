@@ -30,7 +30,7 @@ OpenCmdInCurrent()
 	;msgbox %full_path%
     IfInString full_path, \
     {
-		Run, cmd /V:ON /K cd /D "%full_path%" & call %GD_TOOL%\path\setEnv.bat
+		Run, cmd /V:ON /K cd /D "%full_path%" ; & call %GD_TOOL%\path\setEnv.bat
     }
     else
     {
