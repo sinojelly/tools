@@ -8,10 +8,12 @@
 ; EditPlus再再次常用为Shift+Win+N。--- shift_win_editor_name, shift_win_editor_path
 ; 对文件操作，把Win换为RWin。 ; TODO: RWin不能生效, 暂时用PgUp
 
+APP_BASE = C:\Portable
+
 ; ======= 文本编辑器(N - Notepad) ========
 ; 最常用的Editor
 win_editor_name = Notepad++
-win_editor_path = "D:\Program Files\npp.5.8.6.bin\unicode\notepad++.exe"
+win_editor_path = "%APP_BASE%\notepad++5.9.3\notepad++.exe"
 
 ue_path = "D:\Program Files\UltraEdit\Uedit32.exe"
 
@@ -84,7 +86,7 @@ dict_path = "C:\Program Files\Youdao\Dict4\YodaoDict.exe"
 
 ; ======= 知识管理(K - Knowledge ) ========
 win_knowledge_name = WizExplorer
-win_knowledge_path = "C:\Program Files\WizBrother\Wiz\WizExplorer.exe"
+win_knowledge_path = "C:\Program Files\Wiz\Wiz.exe"
 
 
 ; ======= 书籍 ========

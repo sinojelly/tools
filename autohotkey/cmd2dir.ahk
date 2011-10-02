@@ -49,5 +49,6 @@ GetCurrentDirPath()
 
     ; Just in case - remove all carriage returns (`r)
     StringReplace, full_path, full_path, `r, , all 
-	return substr(full_path, strlen("地址: ")) ; “地址: ”这个字符串可能与系统相关
+	;return substr(full_path, strlen("地址: ")) ; “地址: ”这个字符串可能与系统相关
+    return full_path   ; windows xp
 }

@@ -1,4 +1,0 @@
-Windows Registry Editor Version 5.00
-
-[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]
-"脚本文件名"="D:\\Tools\\CMD\\AutoHotkey\\sinojelly.ahk"
