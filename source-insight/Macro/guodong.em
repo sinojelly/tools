@@ -126,16 +126,16 @@ macro GD_setupkey()
     hhelp = NewBuf("Guodong Command List")
 
     // Ctrl+Alt+H   添加/修改函数头、类头。
-    gd_assignkey(hhelp, "h", "GD_AddHeader", "Add/modify class/function/etc. header.")
+    //gd_assignkey(hhelp, "h", "GD_AddHeader", "Add/modify class/function/etc. header.")
 
     // Ctrl+Alt+F  添加/修改文件头
-    gd_assignkey(hhelp, "f", "GD_AddFileHeader", "Add/modify file header.")
+    //gd_assignkey(hhelp, "f", "GD_AddFileHeader", "Add/modify file header.")
 
     // Ctrl+Alt+O  cpp/h文件切换.
     gd_assignkey(hhelp, "o", "GD_SHSwitch", "Source/Header switch.")
 
     // Ctrl+Alt+A  自动添加所有工程目录中的文件
-    gd_assignkey(hhelp, "a", "GD_AddFiles", "Add all files in project dir.")
+    //gd_assignkey(hhelp, "a", "GD_AddFiles", "Add all files in project dir.")
 
     // Ctrl+Alt+E 打开当前文件所在目录    
     gd_assignkey(hhelp, "e", "GD_OpenExplorer", "Open current file dir.")
@@ -150,12 +150,12 @@ macro GD_setupkey()
     //gd_assignkey(hhelp, "l", "GD_TortoiseSVNLog", "Show log of current file from SVN server.")
 
     // Ctrl+Alt+C 归档当前文件到HG  代码库 
-    gd_assignkey(hhelp, "c", "GD_HgCommitFile", "Commit current file to HG repo.")
+    //gd_assignkey(hhelp, "c", "GD_HgCommitFile", "Commit current file to HG repo.")
 
     // Ctrl+Alt+Shift+C 归档所有已添加到HG库的文件到HG 代码库  
-    PutEnv("HOT_KEY_SHIFT", "1")
-    gd_assignkey(hhelp, "c", "GD_HgCommitAll", "Commit all files to HG repo.")
-    PutEnv("HOT_KEY_SHIFT", "")
+    //PutEnv("HOT_KEY_SHIFT", "1")
+    //gd_assignkey(hhelp, "c", "GD_HgCommitAll", "Commit all files to HG repo.")
+    //PutEnv("HOT_KEY_SHIFT", "")
 
     // Ctrl+Alt+R 运行命令行并进入源代码目录   
     gd_assignkey(hhelp, "r", "GD_RunCmd", "Run cmd and change current dir to project src dir.")
@@ -164,7 +164,7 @@ macro GD_setupkey()
     gd_assignkey(hhelp, "s", "GD_CodeLine", "Count the code line of current file or selected code.")
 
     // Ctrl+Alt+M Measure 统计当前文件圈复杂度(如果选中代码则是选中代码圈复杂度)
-    gd_assignkey(hhelp, "m", "GD_SourceMonitor", "Run SourceMonitor check current file or selected code.")
+    //gd_assignkey(hhelp, "m", "GD_SourceMonitor", "Run SourceMonitor check current file or selected code.")
 
     // Ctrl+Alt+F1  显示帮助信息, 包括doxys帮助
 
