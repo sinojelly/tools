@@ -17,6 +17,13 @@
  * 修改说明 : 创建文件
  * 
  *-----------------------------------------------------------------------------
+ * 版    本 : 1.1
+ * 问 题 单 : 
+ * 作    者 : chenguodong
+ * 时    间 : 2010-1-24 13:32:00
+ * 修改说明 :默认 去掉SVN的支持，增加HG的支持，增加快速打开命令行功能
+ * 
+ *-----------------------------------------------------------------------------
  */
 
 /*说明:
@@ -134,13 +141,24 @@ macro GD_setupkey()
     gd_assignkey(hhelp, "e", "GD_OpenExplorer", "Open current file dir.")
 
     // Ctrl+Alt+C 归档当前文件   
-    gd_assignkey(hhelp, "c", "GD_TortoiseSVNCommit", "Commit current file to SVN server.")
+    //gd_assignkey(hhelp, "c", "GD_TortoiseSVNCommit", "Commit current file to SVN server.")
 
     // Ctrl+Alt+U 更新整个目录       
-    gd_assignkey(hhelp, "u", "GD_TortoiseSVNUpdate", "Update current dir from SVN server.")
+    //gd_assignkey(hhelp, "u", "GD_TortoiseSVNUpdate", "Update current dir from SVN server.")
 
     // Ctrl+Alt+L 显示当前文件的修改日志   
-    gd_assignkey(hhelp, "l", "GD_TortoiseSVNLog", "Show log of current file from SVN server.")
+    //gd_assignkey(hhelp, "l", "GD_TortoiseSVNLog", "Show log of current file from SVN server.")
+
+    // Ctrl+Alt+C 归档当前文件到HG  代码库 
+    gd_assignkey(hhelp, "c", "GD_HgCommitFile", "Commit current file to HG repo.")
+
+    // Ctrl+Alt+Shift+C 归档所有已添加到HG库的文件到HG 代码库  
+    PutEnv("HOT_KEY_SHIFT", "1")
+    gd_assignkey(hhelp, "c", "GD_HgCommitAll", "Commit all files to HG repo.")
+    PutEnv("HOT_KEY_SHIFT", "")
+
+    // Ctrl+Alt+R 运行命令行并进入源代码目录   
+    gd_assignkey(hhelp, "r", "GD_RunCmd", "Run cmd and change current dir to project src dir.")
 
     // Ctrl+Alt+S 统计当前文件代码行(如果选中代码则是选中代码行)
     gd_assignkey(hhelp, "s", "GD_CodeLine", "Count the code line of current file or selected code.")
@@ -154,7 +172,7 @@ macro GD_setupkey()
     gd_assignkey(hhelp, "b", "GD_Comment", "Comment/Uncomment the selected content.")
     //stop
 
-    // Ctrl+Alt+L int   Lint当前文件. 这个还是增加custom lint比较好。
+    // Ctrl+Alt+L    Lint当前文件. 这个还是增加custom lint比较好。
     // 在%j/Lint目录下执行命令: D:\Tools\CMD\Lint\SmartLint\PC-Lint8.0\lint-nt  *_opt.lnt *_file.lnt
     //gd_assignkey(hhelp, "l", "GD_Lint", "Lint current file.")
 
@@ -458,6 +476,80 @@ macro GD_TortoiseSVNUpdate()
     ShellExecute ("open", "\"@exePath@\"", "/command:update /path:*.* /notempfile /closeonend", "", 1)
     //RunCmd("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend")
     //RunCmdLine ("\"@exePath@\" /command:commit /path:\"@szCurPathName@\" /notempfile /closeonend", "", TRUE)
+    
+    //stop
+}
+
+// 修改一点代码就提交，会不会不满足原子提交的原则?
+// 避免破坏原子提交的办法: 注释中用[CA]表示commit all, [CF]表示commit file
+// HG比SVN要好，它可以只在CA之后push到服务器上。
+/* 下面两种命令都正确:
+D:\Projects\Google\sinojelly>hg commit -m "[CF]add setEnv.bat" -I "D:\Projects\G
+oogle\sinojelly\Tools\CMD_src\SourceInsight\setEnv.bat"
+
+D:\Projects\Google\sinojelly>hg commit -m "[CF]add setEnv.bat" -I "Tools\CMD_src
+\SourceInsight\setEnv_bff.bat"
+
+通过hg status可以查看哪些还没有commit
+D:\Projects\Google\sinojelly>hg status
+M Tools\CMD_src\SourceInsight\guodong.em
+A Tools\CMD_src\SourceInsight\GdCommandList_XP.txt
+A Tools\CMD_src\SourceInsight\setEnv_guodong.bat
+
+D:\Projects\Google\sinojelly\JustTest>hg status
+M Tools\CMD_src\SourceInsight\guodong.em
+A JustTest\b.c
+A Tools\CMD_src\SourceInsight\GdCommandList_XP.txt
+A Tools\CMD_src\SourceInsight\setEnv_guodong.bat
+? JustTest\JustTest.IAB
+? JustTest\JustTest.IAD
+? JustTest\JustTest.IMB
+? JustTest\JustTest.IMD
+? JustTest\JustTest.PFI
+
+猜想到的注意，运行此命令时的当前目录是SI工程的源代码目录,它应该是一个hg库
+
+配置为custom command运行成功
+Run: C:\Program Files\Mercurial\hg.exe commit -m "Test" -I D:\Projects\Google\sinojelly\JustTest\b.c
+
+Press the Enter key to return to Source Insight...
+
+为什么宏中运行不成功呢?
+再hg的某子目录创建一个JustTest工程后使用，成功。
+
+*/
+macro GD_HgCommitFile() 
+{
+    //"hg.exe" commit -m "Messages" -I Filename
+
+    hbuf = GetCurrentBuf()    
+    szCurPathName = GetBufName(hbuf)
+
+    szComment = Ask("请输入注释:")
+    ret = ShellExecute ("open", "hg.exe", "commit -m \"[CF]@szComment@\" -I \"@szCurPathName@\"", "", 1)
+    //msg "@ret@"   //这个地方打印1就说明运行成功。要在hg库的目录及子目录创建的SI工程中才可以运行成功。
+    
+    //stop
+}
+
+// 提交整个HG库(原子提交)
+macro GD_HgCommitAll() 
+{
+    //"hg.exe" commit -m "Messages"
+
+    szComment = Ask("请输入注释:")
+    ret = ShellExecute ("open", "hg.exe", "commit -m \"[CA]@szComment@\"", "", 1)
+    //msg "@ret@"   //这个地方打印1就说明运行成功。要在hg库的目录及子目录创建的SI工程中才可以运行成功。
+    
+    //stop
+}
+
+// 运行命令行，并且进入SI工程中的源代码目录
+// 使用hg时这个命令常用。便于运行: hg push, hg status, hg log等
+macro GD_RunCmd() 
+{
+    ret = ShellExecute ("open", "cmd.exe", "", "", 1)
+    //msg "@ret@"   //这个地方打印1就说明运行成功。
     
     //stop
 }
@@ -1612,10 +1704,14 @@ macro gd_assignkey(hhelp, key, cmd_name, cmd_description)
     gd_alt  = GetEnv("HOT_KEY_ALT")
     gd_shift = GetEnv("HOT_KEY_SHIFT")
 
-    if ((gd_ctrl == "") && (gd_alt == "") && (gd_shift == "")) // 未设置
+    if ((gd_ctrl == "") && (gd_alt == "") /*&& (gd_shift == "")*/) // 未设置
     {
         gd_ctrl = 0;
         gd_alt = 1
+        //gd_shift = 0 //shift用于扩展类似命令，不用做用户设置
+    }
+    if (gd_shift == "")
+    {
         gd_shift = 0
     }
     szHotKey = ""
