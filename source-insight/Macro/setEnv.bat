@@ -26,6 +26,7 @@ set SI_EM_FILE=guodong.em
 
 copy %SI_EM_FILE% "%SI_BASE_PRJ:Base.PR=%"
 
+@rem 如果 GD_setup 无法调用，可能是 guodong.em 文件未加入Base工程导致。手动加入之后，关闭 SI，再次运行下面命令应该就好了。
 call "C:\Program Files (x86)\Source Insight 3\Insight3.exe" -c GD_setup
 
 pause

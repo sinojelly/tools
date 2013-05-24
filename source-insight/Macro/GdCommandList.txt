@@ -1,0 +1,5 @@
+Alt+o                 :    GD_SHSwitch  Source/Header switch. 
+Alt+e                 :    GD_OpenExplorer  Open current file dir. 
+Alt+r                 :    GD_RunCmd  Run cmd and change current dir to project src dir. 
+Alt+s                 :    GD_CodeLine  Count the code line of current file or selected code. 
+Alt+b                 :    GD_Comment  Comment/Uncomment the selected content. 
